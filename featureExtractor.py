@@ -72,8 +72,8 @@ for root, dirnames, filenames in os.walk(video_folder_path):
             vid = imageio.get_reader(f,  'ffmpeg')
             point_seq = []
             img_seq = []
-
-            for frm_cnt in tqdm(range(0, vid.get_length())):
+            print(root, filename, vid.count_frames())
+            for frm_cnt in tqdm(range(0, vid.count_frames())):
                 points = np.zeros((68, 2), dtype=np.float32)
 
                 try:

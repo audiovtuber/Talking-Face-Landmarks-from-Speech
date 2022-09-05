@@ -1,0 +1,19 @@
+name: talking-face
+
+channels:
+  - conda-forge
+dependencies:
+  - python=3.7
+  - opencv=3.4.4
+  - tensorflow>=1.9.0,<2.0.0
+  - keras>=2.2.4,<2.3.0
+  - pip
+  - pip:
+    - librosa==0.6.0
+    - dlib
+    - tqdm
+    - numba==0.48
+    - matplotlib
+    - imageio==2.21.2
+    - imageio==ffmpeg-0.4.7
+    # - subprocess

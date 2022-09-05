@@ -1,3 +1,41 @@
+This repo is a fork of [Talking Face Landmarks From Speech](https://github.com/eeskimez/Talking-Face-Landmarks-from-Speech)
+
+# Setup
+> Note: Setup was tested in an Ubuntu 20.04 image in WSL.
+
+1. Install [conda](https://docs.conda.io/en/latest/miniconda.html) like normal using linux script
+2. Install dlib prerequisites:
+``` bash
+sudo apt update
+sudo apt install cmake build-essentials gdb
+```
+3. Clone this repo and setup your conda environment:
+``` bash
+conda env update -f environment.yml
+```
+>**Note**: This may not yet be stable
+4. Download and decompress dlib's face landmark model; this is used to generate ground truth from video
+``` bash
+# in project root
+wget http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
+bzip2 -d shape_predictor_68_face_landmarks.dat.bz2
+```
+
+Finally, activate the conda environment using `conda activate talking-face`. At this point, you should be able to run the [code example](#code-example) below using your own FLAC audio file
+
+# Description of the Code
+
+## Generating Samples
+Simply call [generate.py](./generate.py) using the example below. Pretrained models are already included in the [models](./models/) folder for this purpose
+
+## Training
+> **Note:** This work is not yet complete as of 2022-09-05
+
+[scrape_grid_dataset.py](./scrape_grid_dataset.py) can be used to download the original GRID dataset as tarfiles; be aware that this is about 60GB and can take a while. Before they can be used for training, they must be extracted (using `tar`) and then you must run [featureExtractor.py](./featureExtractor.py) to create the `hdf5` file used for training; this takes even longer!
+
+---
+
+The original README.md contents are below
 # Generating Talking Face Landmarks
 
 The code for [the paper](https://link.springer.com/chapter/10.1007/978-3-319-93764-9_35) "Generating Talking Face Landmarks from Speech."
@@ -8,6 +46,7 @@ An improved version of this project can be found [here](http://www2.ece.rocheste
 
 ## Installation
 
+> **(Note from FSDL team)**: This is outdated and incorrect. Follow install instructions above instead
 #### The project depends on the following Python packages:
 
 * Keras --- 2.2.4
