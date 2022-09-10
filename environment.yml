@@ -15,5 +15,4 @@ dependencies:
     - numba==0.48
     - matplotlib
     - imageio==2.21.2
-    - imageio==ffmpeg-0.4.7
-    # - subprocess
+    - imageio-ffmpeg==0.4.7
