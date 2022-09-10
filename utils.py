@@ -64,13 +64,13 @@ class faceNormalizer(object):
         
         outPts.append([np.int(xout), np.int(yout)])
         
-        tform = cv2.estimateRigidTransform(np.array([inPts]), np.array([outPts]), False)
+        tform = cv2.estimateAffinePartial2D(np.array([inPts]), np.array([outPts]))
         
         return tform
 
     def tformFlmarks(self, flmark, tform):
         transformed = np.reshape(np.array(flmark), (68, 1, 2))           
-        transformed = cv2.transform(transformed, tform)
+        transformed = cv2.transform(transformed, tform[0])
         transformed = np.float32(np.reshape(transformed, (68, 2)))
         return transformed
 
@@ -100,9 +100,9 @@ class faceNormalizer(object):
         eyecornerDst = [ (np.float(0.3 * w ), np.float(h / 3)), (np.float(0.7 * w ), np.float(h / 3)) ]
     
         for i, lmark in enumerate(alignedSeq):
-            curLmark = alignedSeq[i,:,:]
+            curLmark = alignedSeq[i,:,:]  # (375 samples, 68, 2)
             eyecornerSrc  = [ (curLmark[36, 0], curLmark[36, 1]), (curLmark[45, 0], curLmark[45, 1]) ]
-            tform = self.similarityTransform(eyecornerSrc, eyecornerDst);
+            tform = self.similarityTransform(eyecornerSrc, eyecornerDst)
             alignedSeq[i,:,:] = self.tformFlmarks(lmark, tform)
 
         return alignedSeq
@@ -112,7 +112,7 @@ class faceNormalizer(object):
         firstFlmark = exptransSeq[0,:,:]
         indexes = np.array([60, 64, 62, 67])
 
-        tformMS = cv2.estimateRigidTransform(firstFlmark[:,:], np.float32(meanShape[:,:]), True)
+        tformMS = cv2.estimateAffine2D(firstFlmark[:,:], np.float32(meanShape[:,:]), True)
 
         sx = np.sign(tformMS[0,0])*np.sqrt(tformMS[0,0]**2 + tformMS[0,1]**2)
         sy = np.sign(tformMS[1,0])*np.sqrt(tformMS[1,0]**2 + tformMS[1,1]**2)

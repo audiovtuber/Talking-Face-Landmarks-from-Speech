@@ -1,6 +1,21 @@
 This repo is a fork of [Talking Face Landmarks From Speech](https://github.com/eeskimez/Talking-Face-Landmarks-from-Speech)
 
-# Setup
+# Docker Setup
+1. Clone this repo
+2. `cd` to the project root
+3. Build the container (if you want) `docker build -t tf-dev .`
+4. Start the container with `docker run --gpus all -it --name tf-dev-container -v $PWD:/workspace/Talking-Face-Landmarks-from-Speech tf-dev` (this will mount the project inside the container and open a bash terminal)
+## Try it out
+Inside the container, change to the project directory and try generating a video from audio:
+
+``` bash
+cd Talking-Face-Landmarks-from-Speech
+python generate.py -i test_samples/test1.flac -m models/D40_C3.h5 -d 1 -c 3 -o results/D40_C3_test1
+```
+
+The resulting video should be in `results/D40_C3_test1/PD_pts_ws.mp4`
+
+# Local Setup
 > Note: Setup was tested in an Ubuntu 20.04 image in WSL.
 
 1. Install [conda](https://docs.conda.io/en/latest/miniconda.html) like normal using linux script
