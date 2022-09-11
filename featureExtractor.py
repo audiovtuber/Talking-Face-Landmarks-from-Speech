@@ -58,11 +58,7 @@ lmarkData = dataHandler.create_dataset('flmark', (1, 75, 136), maxshape=(None, 7
 
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(predictor_path)
-
-points_old = np.zeros((68, 2), dtype=np.float32)
-
 fileCtr = 0
-
 for root, dirnames, filenames in os.walk(video_folder_path):
     for filename in filenames:
         # You can add the file type of your videos here:
@@ -71,7 +67,6 @@ for root, dirnames, filenames in os.walk(video_folder_path):
             
             vid = imageio.get_reader(f,  'ffmpeg')
             point_seq = []
-            img_seq = []
             print(root, filename, vid.count_frames())
             for frm_cnt in tqdm(range(0, vid.count_frames())):
                 points = np.zeros((68, 2), dtype=np.float32)
