@@ -1,3 +1,7 @@
+"""
+The purpose of this script is to download all videos of the GRID dataset and decompress them. This should only be done 
+if the files are not available via git-lfs
+"""
 from asyncio import subprocess
 import os
 from argparse import ArgumentParser
