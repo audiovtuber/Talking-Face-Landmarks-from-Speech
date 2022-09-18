@@ -23,7 +23,7 @@ The resulting video should be in `results/D40_C3_test1/PD_pts_ws.mp4`
 2. Install dlib prerequisites:
 ``` bash
 sudo apt update
-sudo apt install cmake build-essentials gdb
+sudo apt install cmake build-essential gdb
 ```
 3. Clone this repo and setup your conda environment:
 ``` bash
@@ -39,6 +39,12 @@ bzip2 -d shape_predictor_68_face_landmarks.dat.bz2
 
 Finally, activate the conda environment using `conda activate talking-face`. At this point, you should be able to run the [code example](#code-example) below using your own FLAC audio file
 
+# Downloading the GRID Dataset
+Run `python scrape_grid_dataset.py`, which will do these things:
+1. Downloads all of the videos as tarballs to `{project_root}/grid_dataset`
+2. Extracts the tarballs to `{project_root}/grid_dataset/extracted`
+
+By default, the script has the flag `--use-gcs`, which downloads from a faster mirror
 # Description of the Code
 
 ## Generating Samples

@@ -3,7 +3,7 @@ name: talking-face
 channels:
   - conda-forge
 dependencies:
-  - python=3.7
+  - python=3.8.10
   - opencv
   - tensorflow>=1.9.0,<2.0.0
   - keras>=2.2.4,<2.3.0
@@ -16,3 +16,4 @@ dependencies:
     - matplotlib
     - imageio==2.21.2
     - imageio-ffmpeg==0.4.7
+    - pytest

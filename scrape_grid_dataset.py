@@ -11,7 +11,12 @@ import subprocess
 import requests
 from tqdm import tqdm
 
-def fetch_file(individual:int, part:int, output_dir=None):
+def fetch_file(individual:int, part:int, output_dir=None, use_gcs:bool = True):
+    """
+    Downloads one part of an individual tarball from the GRID dataset. Note that 
+    each individual has two parts and 33 total individuals (individual 21 is missing), 
+    totalling 66 files
+    """
     assert individual in set(range(1,35)) - {21}
     assert part in {1, 2}
     output_dir = 'grid_dataset' if output_dir is None else output_dir
@@ -21,10 +26,14 @@ def fetch_file(individual:int, part:int, output_dir=None):
         print(f"File already exists, skipping")
         return
     os.makedirs(output_dir, exist_ok=True)
-    url = f"https://spandh.dcs.shef.ac.uk/gridcorpus/s{individual}/video/s{individual}.mpg_6000.part{part}.tar"
+    # Note from Slash_Fury: I made a mirror of the dataset in GCP. This is publically accessible
+    url = f"https://storage.googleapis.com/audio-vtuber/s{individual}.mpg_6000.part{part}.tar"
+    if not use_gcs:
+        # fallback URL; slower, but still fastish!
+        url = f"https://spandh.dcs.shef.ac.uk/gridcorpus/s{individual}/video/s{individual}.mpg_6000.part{part}.tar"
     response = requests.get(url, stream=True)
-    # progress bar code borrowed from Stack Overflow :) 
     
+    # progress bar code borrowed from Stack Overflow :) 
     total_size_in_bytes= int(response.headers.get('content-length', 0))
     block_size = 1024 #1 Kibibyte
     progress_bar = tqdm(total=total_size_in_bytes, unit='iB', unit_scale=True)
@@ -37,26 +46,32 @@ def fetch_file(individual:int, part:int, output_dir=None):
         print("ERROR, something went wrong")
 
 
-def download(output_dir:str):
+def download(output_dir:str, use_gcs:bool = True):
+    """
+    Helper function to iterate over all 66 files to be downloaded. See `fetch_file` for details
+    """
     individuals = sorted(set(range(1,35)) - {21})  # all individuals except 21, who doesn't have video
     for idx in individuals:
-        fetch_file(individual=idx, part=1, output_dir=output_dir)
-        fetch_file(individual=idx, part=2, output_dir=output_dir)
+        fetch_file(individual=idx, part=1, output_dir=output_dir, use_gcs=use_gcs)
+        fetch_file(individual=idx, part=2, output_dir=output_dir, use_gcs=use_gcs)
 
 def decompress(input_dir:str, output_dir:str):
+    """
+    Decompress all tarballs at once. Could simply do this in a terminal as well
+    """
     assert os.path.exists(input_dir)
     os.makedirs(output_dir, exist_ok=True)
-    cmd = f"ls {input_dir}" + '/*.tar | xargs -i tar xf {}' + f"-C {output_dir}/"
+    cmd = f"ls {input_dir}" + '/*.tar | xargs -i tar xf {} ' + f"-C {output_dir}/"
     print(f"Extracting videos using this command: {cmd}")
     subprocess.call(cmd, shell=True)
     
 def parse_args():
     parser = ArgumentParser()
+    parser.add_argument('--use-gcs', default=True, type=bool, help='Download from Google Storage')
     parser.add_argument('--output-dir', default='grid_dataset', help='The folder where the tar files will be stored')
     return parser.parse_args()
 
 if __name__ == '__main__':
-    # download()
     # Run this from project root
     args = parse_args()
     download(args.output_dir)
