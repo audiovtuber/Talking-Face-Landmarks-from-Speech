@@ -22,11 +22,11 @@ def extract_features(path:str, overwrite:bool=False):
     Processes a single video and saves two numpy files as output:
     1. `{video_id}-frames.npy` - shape (75, 68, 2), which represents the 68 face landmarks for
     all 75 frames of a video
-    2. `{video_id}-melfeatures.npy` - shape (75, 128, 128), the spectrogram of the audio
+    2. `{video_id}-melfeatures.npy` - shape (75, 128), the spectrogram of the audio
 
     TODO: A very dirty function and I don't like the return values either
     """
-    output_dir = 'build_dataset_output' # TODO: parameterize (use star_map?)
+    output_dir = 'grid_dataset/features' # TODO: parameterize (use star_map?)
     video_id = path.replace('/', '-')
     if os.path.exists(f"{output_dir}/{video_id}-frames.npy") \
         and os.path.exists(f"{output_dir}/{video_id}-melfeatures.npy") \
@@ -121,7 +121,7 @@ if __name__ == '__main__':
         num_processes = args.processes
 
     print(f"Processing videos using {num_processes} processes")
-    os.makedirs("build_dataset_output", exist_ok=True)
+    os.makedirs("grid_dataset/features", exist_ok=True)
     video_paths = glob.glob(str(Path(args.input_dir) / '**/*.mpg'), recursive=True)
     print(f"Found {len(video_paths)} videos")
 

@@ -1,22 +1,19 @@
 # Written by S. Emre Eskimez, in 2017 - University of Rochester
 # Usage: python train.py -i path-to-hdf5-train-file/ -u number-of-hidden-units -d number-of-delay-frames -c number-of-context-frames -o output-folder-to-save-model-file
+import argparse
+import random
+import os, shutil, glob
 
 import tensorflow as tf
-import librosa
 import numpy as np
-import os, shutil, subprocess
 from keras import backend as K
-from keras.layers import Input, LSTM, Dense, Reshape, Activation, Dropout, Flatten
+from keras.layers import Input, LSTM
 from keras.models import Model
 from tqdm import tqdm
-from keras.models import Sequential
-from keras.optimizers import RMSprop, Adam
-import h5py
+from keras.optimizers import  Adam
 from keras.callbacks import TensorBoard
-import argparse, fnmatch
-import pickle
-import random
-import time, datetime
+import pandas as pd
+import numpy as np
 
 #-----------------------------------------#
 #           Reproducible results          #
@@ -30,7 +27,7 @@ tf.set_random_seed(128)
 #-----------------------------------------#
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("-i", "--in-file", type=str, help="Input file containing train data")
+# parser.add_argument("-i", "--in-file", type=str, help="Input file containing train data")
 parser.add_argument("-u", "--hid-unit", type=int, help="hidden units")
 parser.add_argument("-d", "--delay", type=int, help="Delay in terms of number of frames")
 parser.add_argument("-c", "--ctx", type=int, help="context window size")
@@ -60,11 +57,16 @@ recDrpRate = 0.2 # Recurrent Dropout rate
 frameDelay = args.delay # Time delay
 
 numEpochs = 200
-dset = h5py.File(args.in_file, 'r') # Input hdf5 file must contain two keys: 'flmark' and 'MelFeatures'. 
+
+# TODO: refactor hardcoded path
+lmark_paths = glob.glob('grid_dataset/features/*-frames.npy')
+mel_paths = glob.glob('grid_dataset/features/*-melfeatures.npy')
+data = {'melfeatures': mel_paths, 'frames': lmark_paths}
+df = pd.DataFrame(data)
 # 'flmark' contains the normalized face landmarks and shape must be (numberOfSamples, time-steps, 136)
 # 'MelFeatures' contains the features, namely the delta and double delta mel-spectrogram. Shape = (numberOfSamples, time-steps, 128)
 
-numIt = int(dset['flmark'].shape[0]//batchsize) + 1
+numIt = int(len(df)//batchsize) + 1
 metrics = ['MSE', 'MAE']
 
 def addContext(melSpc, ctxWin):
@@ -88,7 +90,7 @@ def writeParams():
         text_file.write("{:30} {}\n".format('recDrpRate:', recDrpRate))
         text_file.write("{:30} {}\n".format('learning-rate:', lr))
         text_file.write("{:30} {}\n".format('h_dim:', h_dim))
-        text_file.write("{:30} {}\n".format('train filename:', args.in_file))
+        # text_file.write("{:30} {}\n".format('train filename:', args.in_file))
         text_file.write("{:30} {}\n".format('loss:', metrics[0]))
         text_file.write("{:30} {}\n".format('metrics:', metrics[1:]))
         text_file.write("{:30} {}\n".format('num_it:', numIt))
@@ -109,14 +111,14 @@ def dataGenerator():
     X_batch = np.zeros((batchsize, num_frames, num_features_X))
     Y_batch = np.zeros((batchsize, num_frames, num_features_Y))
 
-    idxList = range(dset['flmark'].shape[0])
+    idxList = list(range(len(df)))
 
     batch_cnt = 0    
     while True:
         random.shuffle(idxList)
         for i in idxList:
-            cur_lmark = dset['flmark'][i, :, :]
-            cur_mel = dset['MelFeatures'][i, :, :]
+            cur_lmark = np.load(open(df.iloc[i]['frames'], 'rb')).reshape((75, -1))  # later operations expect shape (75, 136) instead of (75, 68, 2)
+            cur_mel = np.load(open(df.iloc[i]['melfeatures'], 'rb'))
 
             if frameDelay > 0:
                 filler = np.tile(cur_lmark[0:1, :], [frameDelay, 1])
@@ -173,7 +175,7 @@ callback.set_model(model)
 k = 0
 for epoch in tqdm(range(numEpochs)):
     for i in tqdm(range(numIt)):
-        X_test, Y_test = gen.next()
+        X_test, Y_test = next(gen)
 
         logs = model.train_on_batch(X_test, Y_test)
         if np.isnan(logs[0]):
