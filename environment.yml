@@ -9,10 +9,9 @@ dependencies:
   - keras>=2.2.4,<2.3.0
   - pip
   - pip:
-    - librosa==0.6.0
+    - librosa==0.9.2
     - dlib
     - tqdm
-    - numba==0.48
     - matplotlib
     - imageio==2.21.2
     - imageio-ffmpeg==0.4.7

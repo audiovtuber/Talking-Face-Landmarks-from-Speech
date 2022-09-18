@@ -1,13 +1,12 @@
-import tensorflow as tf
+import os
+import shutil
+
 import librosa
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
-import matplotlib.pyplot as plt
-import matplotlib.animation as manimation
-import os, shutil, subprocess
-from keras import backend as K
-from keras.models import Model, Sequential, load_model
+
+from keras.models import load_model
 from tqdm import tqdm
 import utils
 import argparse
@@ -33,7 +32,7 @@ num_features_Y = 136
 num_frames = 75
 wsize = 0.04
 hsize = wsize
-fs = 44100
+sample_rate = 44100
 trainDelay = args.delay
 ctxWin = args.ctx
 
@@ -53,7 +52,7 @@ zeroVecD = np.zeros((1, 64), dtype='f16')
 zeroVecDD = np.zeros((2, 64), dtype='f16')
 
 # Load speech and extract features
-sound, sr = librosa.load(test_file, sr=fs)
+sound, sr = librosa.load(test_file, sr=sample_rate)
 melFrames = np.transpose(utils.melSpectra(sound, sr, wsize, hsize))
 melDelta = np.insert(np.diff(melFrames, n=1, axis=0), 0, zeroVecD, axis=0)
 melDDelta = np.insert(np.diff(melFrames, n=2, axis=0), 0, zeroVecDD, axis=0)
@@ -89,6 +88,6 @@ if len(generated.shape) < 3:
 
 fnorm = utils.faceNormalizer()
 generated = fnorm.alignEyePointsV2(600*generated) / 600.0 
-utils.write_video_wpts_wsound(generated, sound, fs, output_path, 'PD_pts', [0, 1], [0, 1])
+utils.write_video_wpts_wsound(generated, sound, sample_rate, output_path, 'PD_pts', [0, 1], [0, 1])
 
 

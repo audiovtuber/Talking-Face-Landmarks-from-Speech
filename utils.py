@@ -1,19 +1,17 @@
+import os
+import subprocess
+import math
+import copy
+
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.animation as manimation
-import matplotlib.lines as mlines
-from matplotlib import transforms
-import argparse, os, fnmatch, shutil
 import numpy as np
 import cv2
-import math
-import copy
 import librosa
-import dlib
-import subprocess
-from keras import backend as K
 from tqdm import tqdm
+import soundfile as sf
 
 font = {'size'   : 18}
 mpl.rc('font', **font)
@@ -134,7 +132,7 @@ class faceNormalizer(object):
         normSeq[:, : , 1] /= self.h
         return normSeq
 
-def write_video_wpts_wsound(frames, sound, fs, path, fname, xLim, yLim):
+def write_video_wpts_wsound(frames, sound, sample_rate, path, fname, xLim, yLim):
     try:
         os.remove(os.path.join(path, fname+'.mp4'))
         os.remove(os.path.join(path, fname+'.wav'))
@@ -158,9 +156,8 @@ def write_video_wpts_wsound(frames, sound, fs, path, fname, xLim, yLim):
     plt.xlim(xLim)
     plt.ylim(yLim)
 
-    librosa.output.write_wav(os.path.join(path, fname+'.wav'), sound, fs)
-
-    rect = (0, 0, 600, 600)
+    # librosa.output.write_wav(os.path.join(path, fname+'.wav'), sound, sample_rate)
+    sf.write(os.path.join(path, fname+'.wav'), sound, sample_rate, 'PCM_24')
     
     if frames.shape[1] == 20:
         lookup = [[x[0] - 48, x[1] - 48] for x in Mouth]
