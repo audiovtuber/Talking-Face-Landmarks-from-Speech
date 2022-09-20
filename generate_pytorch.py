@@ -1,3 +1,6 @@
+"""
+Intended as a replacement for `generate.py`
+"""
 import os
 import shutil
 import argparse
@@ -59,7 +62,7 @@ melDelta = np.insert(np.diff(melFrames, n=1, axis=0), 0, zeroVecD, axis=0)
 melDDelta = np.insert(np.diff(melFrames, n=2, axis=0), 0, zeroVecDD, axis=0)
 
 features = np.concatenate((melDelta, melDDelta), axis=1)
-features = addContext(features, ctxWin)
+# features = addContext(features, ctxWin)  # TODO: revisit this!
 features = np.reshape(features, (1, features.shape[0], features.shape[1]))
 
 upper_limit = features.shape[1]
@@ -68,6 +71,7 @@ generated = np.zeros((0, num_features_Y))
 
 # Generates face landmarks one-by-one
 # This part can be modified to predict the whole sequence at one, but may introduce discontinuities
+hidden, cell = None, None
 with torch.no_grad():
     for i in tqdm(range(upper_limit)):
         cur_features = np.zeros((1, num_frames, features.shape[2]))
@@ -75,14 +79,20 @@ with torch.no_grad():
             lower = i+1-75
         cur_features[:,-i-1:,:] = features[:,lower:i+1,:]
 
-        pred = model(torch.tensor(cur_features).float())[0]
+        if hidden is None:
+            pred, (hidden, cell) = model(torch.tensor(cur_features).float())
+        else:
+            pred, (hidden, cell) = model(torch.tensor(cur_features).float(), hidden, cell)
         generated = np.append(generated, np.reshape(pred[0,-1,:], (1, num_features_Y)), axis=0)
 
+    """
+    # TODO: revisit this; not sure it works as intended!
     # Shift the array to remove the delay
     generated = generated[trainDelay:, :]
     tmp = generated[-1:, :]
     for _ in range(trainDelay):
         generated = np.append(generated, tmp, axis=0)
+    """
 
     if len(generated.shape) < 3:
         print(generated.shape)

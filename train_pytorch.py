@@ -22,15 +22,18 @@ class TalkingFaceLSTM(pl.LightningModule):
         self.model = nn.LSTM(input_size=128, hidden_size=256, proj_size=136, num_layers=4, dropout=0.2, batch_first=True, )
         # self.train_accuracy = torchmetrics.Accuracy()
 
-    def forward(self, X):
-        return self.model(X)
+    def forward(self, X, hidden=None, cell=None):
+        if hidden is not None:
+            return self.model(X, (hidden, cell))
+        else:
+            return self.model(X)
 
     def configure_optimizers(self):
         return self.optimizer(self.parameters(), lr=self.lr)
     
     def training_step(self, batch, batch_idx):
         x, y = batch
-        preds = self(x)[0]
+        preds = self(x)[0]  # drops the hidden state because it's not needed during batch operations, only during single-frame inference
         loss = self.criterion(preds, y)
         # perform logging
         self.log("train_loss", loss, prog_bar=True)
@@ -38,7 +41,7 @@ class TalkingFaceLSTM(pl.LightningModule):
     
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        preds = self(x)[0]
+        preds = self(x)[0]  # drops the hidden state because it's not needed during batch operations, only during single-frame inference
         loss = self.criterion(preds, y)
         # perform logging
         self.log("val_loss", loss, prog_bar=True)
@@ -50,10 +53,10 @@ if __name__ == '__main__':
         optimizer='adam',
         learning_rate=1e-3,
         batch_size=128,
-        save_path='./pytorch_output',
+        save_path='./pytorch_output/',
         # Trainer args
         gpus=int(torch.cuda.is_available()),
-        num_epochs=200,
+        num_epochs=50,
     )
 
     # # Instantiate Model

@@ -22,10 +22,15 @@ class GridDataset(torch.utils.data.Dataset):
         df = df[df['individual'].isin(individuals)]
         return df
 
-    def __init__(self, individuals:Set[int], transform=None, target_transform=None):
+    def __init__(self, individuals:Set[int], transform=None, target_transform=None, frame_delay:int=0):
+        super().__init__()
         self.df = self._construct_data(individuals)
         self.transform = transform
         self.target_transform = target_transform
+        self.frame_delay = frame_delay
+        if self.frame_delay:
+            # TODO: handle delay (likely in __getitem__, actually)
+            pass
 
     def __len__(self):
         return len(self.df)
@@ -37,7 +42,7 @@ class GridDataset(torch.utils.data.Dataset):
 
 
 class GridDataModule(pl.LightningDataModule):
-    def __init__(self, training_individuals:Set[int]=None, batch_size=32):
+    def __init__(self, training_individuals:Set[int]=None, num_workers:int = 11, batch_size=32):
         super().__init__()
         allowed_individuals = set(range(1, 35)) - {21}
         if training_individuals is None:
@@ -47,12 +52,17 @@ class GridDataModule(pl.LightningDataModule):
         self.training_individuals = training_individuals
         self.val_individuals = allowed_individuals - self.training_individuals
         self.batch_size = batch_size
+        self.num_workers = num_workers
 
     def train_dataloader(self: pl.LightningDataModule) -> torch.utils.data.DataLoader:
-        return torch.utils.data.DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=11)
+        return torch.utils.data.DataLoader(self.train_dataset, batch_size=self.batch_size,
+            num_workers=self.num_workers
+            )
 
     def val_dataloader(self: pl.LightningDataModule) -> torch.utils.data.DataLoader:
-        return torch.utils.data.DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=11)
+        return torch.utils.data.DataLoader(self.val_dataset, batch_size=self.batch_size,
+            num_workers=self.num_workers
+            )
     
     def prepare_data(self): # node-level data preparation. e.g. move files around
         pass

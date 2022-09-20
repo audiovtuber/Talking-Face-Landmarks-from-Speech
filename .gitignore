@@ -1,2 +1,4 @@
 **/__pycache__
 grid_dataset
+lightning_logs
+.pytest_cache

@@ -119,9 +119,9 @@ def dataGenerator():
         for i in idxList:
             cur_lmark = np.load(open(df.iloc[i]['frames'], 'rb')).reshape((75, -1))  # later operations expect shape (75, 136) instead of (75, 68, 2)
             cur_mel = np.load(open(df.iloc[i]['melfeatures'], 'rb'))
-
+            breakpoint()
             if frameDelay > 0:
-                filler = np.tile(cur_lmark[0:1, :], [frameDelay, 1])
+                filler = np.tile(cur_lmark[0:1, :], [frameDelay, 1])  # projects (1, 136) to (40, 136)
                 cur_lmark = np.insert(cur_lmark, 0, filler, axis=0)[:num_frames]
              
             X_batch[batch_cnt, :, :] = addContext(cur_mel, ctxWin)
