@@ -5,7 +5,7 @@ This repo is a fork of [Talking Face Landmarks From Speech](https://github.com/e
 2. `cd` to the project root
 3. Build the container (if you want) `docker build -t tf-dev .`
   * Alternatively, pull the container from dockerhub via `docker pull slashfury/fsdl-talking-face`
-4. Start the container with `docker run --gpus all -it --name tf-dev -v $PWD:/workspace/Talking-Face-Landmarks-from-Speech slashfury/fsdl-talking-face` (this will mount the project inside the container and open a bash terminal)
+4. Start the container with `docker run --gpus all -it --name tf-dev -v $PWD:/workspace/Talking-Face-Landmarks-from-Speech --ipc=host slashfury/fsdl-talking-face` (this will mount the project inside the container and open a bash terminal)
 ## Try it out
 Inside the container, change to the project directory and try generating a video from audio:
 

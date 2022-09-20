@@ -59,8 +59,8 @@ frameDelay = args.delay # Time delay
 numEpochs = 200
 
 # TODO: refactor hardcoded path
-lmark_paths = glob.glob('grid_dataset/features/*-frames.npy')
-mel_paths = glob.glob('grid_dataset/features/*-melfeatures.npy')
+lmark_paths = sorted(glob.glob('grid_dataset/features/*-frames.npy')) # the "sorted" call is important; it ensures the filepaths are in the same order
+mel_paths = sorted(glob.glob('grid_dataset/features/*-melfeatures.npy'))
 data = {'melfeatures': mel_paths, 'frames': lmark_paths}
 df = pd.DataFrame(data)
 # 'flmark' contains the normalized face landmarks and shape must be (numberOfSamples, time-steps, 136)
