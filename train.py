@@ -1,188 +1,110 @@
-# Written by S. Emre Eskimez, in 2017 - University of Rochester
-# Usage: python train.py -i path-to-hdf5-train-file/ -u number-of-hidden-units -d number-of-delay-frames -c number-of-context-frames -o output-folder-to-save-model-file
-import argparse
-import random
-import os, shutil, glob
+import os
+from argparse import ArgumentParser
+# from types import SimpleNamespace
 
-import tensorflow as tf
-import numpy as np
-from keras import backend as K
-from keras.layers import Input, LSTM
-from keras.models import Model
-from tqdm import tqdm
-from keras.optimizers import  Adam
-from keras.callbacks import TensorBoard
-import pandas as pd
-import numpy as np
+import torch
+import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
+from torch.optim import Adam, SGD
+import torch.nn as nn
 
-#-----------------------------------------#
-#           Reproducible results          #
-#-----------------------------------------#
-sess = tf.Session()
-K.set_session(sess)
-os.environ['PYTHONHASHSEED'] = '128'
-np.random.seed(128)
-random.seed(128)
-tf.set_random_seed(128)
-#-----------------------------------------#
-
-parser = argparse.ArgumentParser(description=__doc__)
-# parser.add_argument("-i", "--in-file", type=str, help="Input file containing train data")
-parser.add_argument("-u", "--hid-unit", type=int, help="hidden units")
-parser.add_argument("-d", "--delay", type=int, help="Delay in terms of number of frames")
-parser.add_argument("-c", "--ctx", type=int, help="context window size")
-parser.add_argument("-o", "--out-fold", type=str, help="output folder")
-args = parser.parse_args()
-
-output_path = args.out_fold+'_'+str(args.hid_unit)+'/'
-
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
-else:
-    shutil.rmtree(output_path)
-    os.mkdir(output_path)
-
-ctxWin = args.ctx
-num_features_X = 128 * (ctxWin+1)# input feature size
-num_features_Y = 136 # output feature size --> (68, 2)
-num_frames = 75 # time-steps
-batchsize = 128
-h_dim = args.hid_unit
-lr = 1e-3
+from dataset import GridDataModule
 
 
-drpRate = 0.2 # Dropout rate 
-recDrpRate = 0.2 # Recurrent Dropout rate 
+class TalkingFaceLSTM(pl.LightningModule):
+    def __init__(self, num_landmarks,
+                optimizer='adam', 
+                lr=1e-3,
+                layers=4,
+                hidden_size=256,
+                ):
+        super().__init__()
 
-frameDelay = args.delay # Time delay
+        optimizers = {'adam': Adam, 'sgd': SGD}
+        self.optimizer = optimizers[optimizer]
+        self.num_landmarks = num_landmarks
+        self.lr = lr
+        self.layers=layers
+        self.hidden_size = hidden_size
+        #instantiate loss criterion
+        self.criterion = nn.MSELoss()
+        self.model = nn.LSTM(input_size=128, hidden_size=self.hidden_size, proj_size=2 * self.num_landmarks, num_layers=self.layers, dropout=0.2, batch_first=True, )
+        # self.train_accuracy = torchmetrics.Accuracy()
 
-numEpochs = 200
+    def forward(self, X, hidden=None, cell=None):
+        if hidden is not None:
+            return self.model(X, (hidden, cell))
+        else:
+            return self.model(X)
 
-# TODO: refactor hardcoded path
-lmark_paths = sorted(glob.glob('grid_dataset/features/*-frames.npy')) # the "sorted" call is important; it ensures the filepaths are in the same order
-mel_paths = sorted(glob.glob('grid_dataset/features/*-melfeatures.npy'))
-data = {'melfeatures': mel_paths, 'frames': lmark_paths}
-df = pd.DataFrame(data)
-# 'flmark' contains the normalized face landmarks and shape must be (numberOfSamples, time-steps, 136)
-# 'MelFeatures' contains the features, namely the delta and double delta mel-spectrogram. Shape = (numberOfSamples, time-steps, 128)
+    def configure_optimizers(self):
+        return self.optimizer(self.parameters(), lr=self.lr)
+    
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        preds = self(x)[0]  # drops the hidden state because it's not needed during batch operations, only during single-frame inference
+        loss = self.criterion(preds, y)
+        # perform logging
+        self.log("train_loss", loss, prog_bar=True)
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        preds = self(x)[0]  # drops the hidden state because it's not needed during batch operations, only during single-frame inference
+        loss = self.criterion(preds, y)
+        # perform logging
+        self.log("val_loss", loss, prog_bar=True)
 
-numIt = int(len(df)//batchsize) + 1
-metrics = ['MSE', 'MAE']
 
-def addContext(melSpc, ctxWin):
-    ctx = melSpc[:,:]
-    filler = melSpc[0, :]
-    for i in range(ctxWin):
-        melSpc = np.insert(melSpc, 0, filler, axis=0)[:ctx.shape[0], :]
-        ctx = np.append(ctx, melSpc, axis=1)
-    return ctx
+def parse_args():
+    parser = ArgumentParser()
+    parser.add_argument('--landmarks', type=int, default=68, help='Number of landmarks to predict during training')
+    parser.add_argument('--optimizer', default='adam', help='Type of optimizer to use. Adam or SGD')
+    parser.add_argument('--learning-rate', type=float, default=1e-3, help='Starting learning rate')
+    parser.add_argument('--batch-size', type=int, default=128, help='Samples per batch')
+    parser.add_argument('--layers', type=int, default=4, help='Number of LSTM layers')
+    parser.add_argument('--hidden-size', type=int, default=256, help='Number of units per LSTM layer. Must be >= 2 * landmarks')
+    parser.add_argument('--save-path', required=True, help='Where to save the final model')
+    parser.add_argument('--epochs', type=int, default=50, help='Total epochs for training')
+    parser.add_argument('--log-every-n-steps', type=int, default=250, help='Log to Weights & Biases after N steps')
+    return parser.parse_args()
 
-def writeParams():
-    # Write parameters of the network and training configuration
-    with open(os.path.join(output_path, "model_info.txt"), "w") as text_file:
-        text_file.write("{:30} {}\n".format('', output_path))
-        text_file.write("------------------------------------------------------------------\n")
-        text_file.write("{:30} {}\n".format('batchsize:', batchsize))
-        text_file.write("{:30} {}\n".format('num_frames:', num_frames))
-        text_file.write("{:30} {}\n".format('num_features_X:', num_features_X))
-        text_file.write("{:30} {}\n".format('num_features_Y:', num_features_Y))
-        text_file.write("{:30} {}\n".format('drpRate:', drpRate))
-        text_file.write("{:30} {}\n".format('recDrpRate:', recDrpRate))
-        text_file.write("{:30} {}\n".format('learning-rate:', lr))
-        text_file.write("{:30} {}\n".format('h_dim:', h_dim))
-        # text_file.write("{:30} {}\n".format('train filename:', args.in_file))
-        text_file.write("{:30} {}\n".format('loss:', metrics[0]))
-        text_file.write("{:30} {}\n".format('metrics:', metrics[1:]))
-        text_file.write("{:30} {}\n".format('num_it:', numIt))
-        text_file.write("{:30} {}\n".format('frameDelay:', frameDelay))
-        text_file.write("------------------------------------------------------------------\n")
-        model.summary(print_fn=lambda x: text_file.write(x + '\n'))
-
-def write_log(callback, names, logs, batch_no):
-    for name, value in zip(names, logs):
-        summary = tf.Summary()
-        summary_value = summary.value.add()
-        summary_value.simple_value = value
-        summary_value.tag = name
-        callback.writer.add_summary(summary, batch_no)
-        callback.writer.flush()
-
-def dataGenerator():
-    X_batch = np.zeros((batchsize, num_frames, num_features_X))
-    Y_batch = np.zeros((batchsize, num_frames, num_features_Y))
-
-    idxList = list(range(len(df)))
-
-    batch_cnt = 0    
-    while True:
-        random.shuffle(idxList)
-        for i in idxList:
-            cur_lmark = np.load(open(df.iloc[i]['frames'], 'rb')).reshape((75, -1))  # later operations expect shape (75, 136) instead of (75, 68, 2)
-            cur_mel = np.load(open(df.iloc[i]['melfeatures'], 'rb'))
-            breakpoint()
-            if frameDelay > 0:
-                filler = np.tile(cur_lmark[0:1, :], [frameDelay, 1])  # projects (1, 136) to (40, 136)
-                cur_lmark = np.insert(cur_lmark, 0, filler, axis=0)[:num_frames]
-             
-            X_batch[batch_cnt, :, :] = addContext(cur_mel, ctxWin)
-            Y_batch[batch_cnt, :, :] = cur_lmark
-            
-            batch_cnt+=1
-
-            if batch_cnt == batchsize:
-                batch_cnt = 0
-                yield X_batch, Y_batch
-
-def build_model():
-    net_in = Input(shape=(num_frames, num_features_X))
-    h = LSTM(h_dim, 
-            activation='sigmoid', 
-            dropout=drpRate, 
-            recurrent_dropout=recDrpRate,
-            return_sequences=True)(net_in)
-    h = LSTM(h_dim, 
-            activation='sigmoid',  
-            dropout=drpRate, 
-            recurrent_dropout=recDrpRate,
-            return_sequences=True)(h)
-    h = LSTM(h_dim, 
-            activation='sigmoid', 
-            dropout=drpRate, 
-            recurrent_dropout=recDrpRate,
-            return_sequences=True)(h)
-    h = LSTM(num_features_Y, 
-            activation='sigmoid', 
-            dropout=drpRate, 
-            recurrent_dropout=recDrpRate,
-            return_sequences=True)(h)
-    model = Model(inputs=net_in, outputs=h)
-    model.summary()
-
-    opt = Adam(lr=lr)
-
-    model.compile(opt, metrics[0], 
-                metrics= metrics[1:])
-    return model
-
-gen = dataGenerator()
-model = build_model()
-
-writeParams()
-
-callback = TensorBoard(output_path)
-callback.set_model(model)
-
-k = 0
-for epoch in tqdm(range(numEpochs)):
-    for i in tqdm(range(numIt)):
-        X_test, Y_test = next(gen)
-
-        logs = model.train_on_batch(X_test, Y_test)
-        if np.isnan(logs[0]):
-            print ('NAN LOSS!')
-            exit()
-
-        write_log(callback, metrics, logs, k)
-        k+=1
-
-    model.save(output_path+'talkingFaceModel.h5')
+if __name__ == '__main__':
+    args = parse_args()
+    args.optimizer = args.optimizer.lower()
+    assert args.landmarks == 68  # TODO: Someday, maybe support other number of landmarks
+    assert args.optimizer in {'adam', 'sgd'}
+    assert args.hidden_size >= 2 * args.landmarks
+    """
+    args = SimpleNamespace(
+        num_landmarks=136,
+        optimizer='adam',
+        learning_rate=1e-3,
+        batch_size=128,
+        save_path='./pytorch_output/',
+        # Trainer args
+        gpus=int(torch.cuda.is_available()),
+        epochs=50,
+    )
+    """
+    # os.environ["WANDB_START_METHOD"] = "thread"
+    os.environ['WANDB_DISABLE_CODE']='True'
+    # # Instantiate Model
+    model = TalkingFaceLSTM(num_landmarks = args.landmarks,
+                            optimizer = args.optimizer, 
+                            lr = args.learning_rate,
+                            layers=args.layers,
+                            hidden_size=args.hidden_size,
+                            )
+    # Instantiate lightning trainer and train model
+    trainer_args = {'gpus': int(torch.cuda.is_available()), 'max_epochs': args.epochs}
+    wandb_logger = WandbLogger(project="audio-vtuber", job_type="train", log_model=True)
+    wandb_logger.watch(model, log_freq=max(100, args.log_every_n_steps))
+    wandb_logger.log_hyperparams(vars(args))
+    checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min")
+    trainer = pl.Trainer(logger=wandb_logger, callbacks=[checkpoint_callback], **trainer_args)
+    trainer.fit(model, datamodule=GridDataModule(batch_size=args.batch_size))
+    # Save trained model
+    save_path = (args.save_path if args.save_path is not None else '/') + 'trained_model.ckpt'
+    trainer.save_checkpoint(save_path)

@@ -1,15 +1,19 @@
+"""
+Intended as a replacement for `generate.py`
+"""
 import os
 import shutil
+import argparse
 
+import torch
 import librosa
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
-
-from keras.models import load_model
 from tqdm import tqdm
+
 import utils
-import argparse
+from train import TalkingFaceLSTM
 
 def addContext(melSpc, ctxWin):
     ctx = melSpc[:,:]
@@ -38,12 +42,12 @@ ctxWin = args.ctx
 
 if not os.path.exists(output_path):
     os.makedirs(output_path)
-else:
-    shutil.rmtree(output_path)
-    os.mkdir(output_path)
+# else:
+#     shutil.rmtree(output_path)
+#     os.mkdir(output_path)
 
-model = load_model(args.model)
-model.summary()
+model = TalkingFaceLSTM.load_from_checkpoint(args.model, num_landmarks=68, layers=4, hidden_size=512)
+model.eval()
 
 test_file = args.in_file
 
@@ -58,7 +62,7 @@ melDelta = np.insert(np.diff(melFrames, n=1, axis=0), 0, zeroVecD, axis=0)
 melDDelta = np.insert(np.diff(melFrames, n=2, axis=0), 0, zeroVecDD, axis=0)
 
 features = np.concatenate((melDelta, melDDelta), axis=1)
-features = addContext(features, ctxWin)
+# features = addContext(features, ctxWin)  # TODO: revisit this!
 features = np.reshape(features, (1, features.shape[0], features.shape[1]))
 
 upper_limit = features.shape[1]
@@ -67,27 +71,35 @@ generated = np.zeros((0, num_features_Y))
 
 # Generates face landmarks one-by-one
 # This part can be modified to predict the whole sequence at one, but may introduce discontinuities
-for i in tqdm(range(upper_limit)):
-    cur_features = np.zeros((1, num_frames, features.shape[2]))
-    if i+1 > 75:
-        lower = i+1-75
-    cur_features[:,-i-1:,:] = features[:,lower:i+1,:]
+hidden, cell = None, None
+with torch.no_grad():
+    for i in tqdm(range(upper_limit)):
+        cur_features = np.zeros((1, num_frames, features.shape[2]))
+        if i+1 > 75:
+            lower = i+1-75
+        cur_features[:,-i-1:,:] = features[:,lower:i+1,:]
 
-    pred = model.predict(cur_features)
-    generated = np.append(generated, np.reshape(pred[0,-1,:], (1, num_features_Y)), axis=0)
+        if hidden is None:
+            pred, (hidden, cell) = model(torch.tensor(cur_features).float())
+        else:
+            pred, (hidden, cell) = model(torch.tensor(cur_features).float(), hidden, cell)
+        generated = np.append(generated, np.reshape(pred[0,-1,:], (1, num_features_Y)), axis=0)
 
-# Shift the array to remove the delay
-generated = generated[trainDelay:, :]
-tmp = generated[-1:, :]
-for _ in range(trainDelay):
-    generated = np.append(generated, tmp, axis=0)
+    """
+    # TODO: revisit this; not sure it works as intended!
+    # Shift the array to remove the delay
+    generated = generated[trainDelay:, :]
+    tmp = generated[-1:, :]
+    for _ in range(trainDelay):
+        generated = np.append(generated, tmp, axis=0)
+    """
 
-if len(generated.shape) < 3:
-    print(generated.shape)
-    generated = np.reshape(generated, (generated.shape[0], int(generated.shape[1]/2), 2))
+    if len(generated.shape) < 3:
+        print(generated.shape)
+        generated = np.reshape(generated, (generated.shape[0], int(generated.shape[1]/2), 2))
 
-fnorm = utils.faceNormalizer()
-generated = fnorm.alignEyePointsV2(600*generated) / 600.0 
-utils.write_video_wpts_wsound(generated, sound, sample_rate, output_path, 'PD_pts', [0, 1], [0, 1])
+    fnorm = utils.faceNormalizer()
+    generated = fnorm.alignEyePointsV2(600*generated) / 600.0 
+    utils.write_video_wpts_wsound(generated, sound, sample_rate, output_path, 'PD_pts', [0, 1], [0, 1])
 
 
