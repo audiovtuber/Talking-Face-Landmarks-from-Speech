@@ -7,3 +7,4 @@ imageio==2.21.2
 imageio-ffmpeg==0.4.7
 pytest
 pytorch-lightning==1.7.6
+wandb==0.13.3
