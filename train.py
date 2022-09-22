@@ -68,6 +68,7 @@ def parse_args():
     parser.add_argument('--save-path', required=True, help='Where to save the final model')
     parser.add_argument('--epochs', type=int, default=50, help='Total epochs for training')
     parser.add_argument('--log-every-n-steps', type=int, default=250, help='Log to Weights & Biases after N steps')
+    parser.add_argument('--frame-delay', type=int, default=0, help='Offsets the landmarks by this many frames (1 = 40ms, 2 = 80ms, etc)')
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -104,7 +105,7 @@ if __name__ == '__main__':
     wandb_logger.log_hyperparams(vars(args))
     checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min")
     trainer = pl.Trainer(logger=wandb_logger, callbacks=[checkpoint_callback], **trainer_args)
-    trainer.fit(model, datamodule=GridDataModule(batch_size=args.batch_size))
+    trainer.fit(model, datamodule=GridDataModule(batch_size=args.batch_size, frame_delay=args.frame_delay))
     # Save trained model
     save_path = (args.save_path if args.save_path is not None else '/') + 'trained_model.ckpt'
     trainer.save_checkpoint(save_path)

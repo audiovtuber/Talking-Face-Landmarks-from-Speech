@@ -13,6 +13,12 @@ git config --global --add safe.directory /workspace/Talking-Face-Landmarks-from-
 wandb login
 ```
 
+## A100 Instructions
+If running on a machine with an A100 GPU, you need to use a specific version of pytorch. Run this command:
+``` bash
+pip install torch==1.12.1+cu116  -f https://download.pytorch.org/whl/torch_stable.html
+```
+
 # Preparing Data
 
 Before you can train a model, you'll need to download and process the [GRID dataset](https://spandh.dcs.shef.ac.uk//gridcorpus/). This can be done via the [`scrape_grid_dataset.py`](scrape_grid_dataset.py) and [`build_dataset.py`](build_dataset.py) scripts. 

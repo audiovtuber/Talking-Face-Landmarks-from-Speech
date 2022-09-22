@@ -20,6 +20,7 @@ class GridDataset(torch.utils.data.Dataset):
 
         df['individual'] = df['frames'].str.extract(r'-s([0-9]{1,2})-').astype(int)
         df = df[df['individual'].isin(individuals)]
+
         return df
 
     def __init__(self, individuals:Set[int], transform=None, target_transform=None, frame_delay:int=0):
@@ -28,21 +29,24 @@ class GridDataset(torch.utils.data.Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.frame_delay = frame_delay
-        if self.frame_delay:
-            # TODO: handle delay (likely in __getitem__, actually)
-            pass
 
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, idx):
         mel = torch.tensor(np.load(open(self.df.iloc[idx]['melfeatures'], 'rb'))).float()
-        frames = torch.tensor(np.load(open(self.df.iloc[idx]['frames'], 'rb'))).float()
+        frames = np.load(open(self.df.iloc[idx]['frames'], 'rb'))
+
+        # TODO: Consider not rolling from ends and just copy/ignore those edge cases
+        if self.frame_delay != 0:
+            frames = np.roll(frames, self.frame_delay, axis=0)
+        frames = torch.tensor(frames).float()
+
         return (mel, frames.flatten(1))
 
 
 class GridDataModule(pl.LightningDataModule):
-    def __init__(self, training_individuals:Set[int]=None, num_workers:int = 11, batch_size=32):
+    def __init__(self, training_individuals:Set[int]=None, num_workers:int = 11, batch_size=32, frame_delay:int=0):
         super().__init__()
         allowed_individuals = set(range(1, 35)) - {21}
         if training_individuals is None:
@@ -53,6 +57,7 @@ class GridDataModule(pl.LightningDataModule):
         self.val_individuals = allowed_individuals - self.training_individuals
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.frame_delay = frame_delay
 
     def train_dataloader(self: pl.LightningDataModule) -> torch.utils.data.DataLoader:
         return torch.utils.data.DataLoader(self.train_dataset, batch_size=self.batch_size,
@@ -69,9 +74,10 @@ class GridDataModule(pl.LightningDataModule):
       
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
-            self.train_dataset = GridDataset(individuals=self.training_individuals)
-            self.val_dataset = GridDataset(individuals=self.val_individuals)
+            self.train_dataset = GridDataset(individuals=self.training_individuals, frame_delay=self.frame_delay)
+            self.val_dataset = GridDataset(individuals=self.val_individuals, frame_delay=self.frame_delay)
 
 
 if __name__ == '__main__':
-    data_module = GridDataModule()
+    data_module = GridDataModule(frame_delay=-2)
+    data_module.setup("fit")
