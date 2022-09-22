@@ -1,5 +1,6 @@
 import os
 from argparse import ArgumentParser
+from pathlib import Path
 # from types import SimpleNamespace
 
 import torch
@@ -31,6 +32,7 @@ class TalkingFaceLSTM(pl.LightningModule):
         self.criterion = nn.MSELoss()
         self.model = nn.LSTM(input_size=128, hidden_size=self.hidden_size, proj_size=2 * self.num_landmarks, num_layers=self.layers, dropout=0.2, batch_first=True, )
         # self.train_accuracy = torchmetrics.Accuracy()
+        self.save_hyperparameters()
 
     def forward(self, X, hidden=None, cell=None):
         if hidden is not None:
@@ -107,5 +109,5 @@ if __name__ == '__main__':
     trainer = pl.Trainer(logger=wandb_logger, callbacks=[checkpoint_callback], **trainer_args)
     trainer.fit(model, datamodule=GridDataModule(batch_size=args.batch_size, frame_delay=args.frame_delay))
     # Save trained model
-    save_path = (args.save_path if args.save_path is not None else '/') + 'trained_model.ckpt'
+    save_path = Path(args.save_path) / 'trained_model.ckpt'
     trainer.save_checkpoint(save_path)

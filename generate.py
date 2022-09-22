@@ -42,11 +42,8 @@ ctxWin = args.ctx
 
 if not os.path.exists(output_path):
     os.makedirs(output_path)
-# else:
-#     shutil.rmtree(output_path)
-#     os.mkdir(output_path)
 
-model = TalkingFaceLSTM.load_from_checkpoint(args.model, num_landmarks=68, layers=4, hidden_size=512)
+model = TalkingFaceLSTM.load_from_checkpoint(args.model)
 model.eval()
 
 test_file = args.in_file
