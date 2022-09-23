@@ -53,7 +53,7 @@ def process_video(video_path:str, output_dir:str, model:TalkingFacePredictor=Non
         predictions = predictions.astype('int')
         
         # TODO: why do I need to pad frames into the audio? refactor this hack
-        predictions = np.resize(predictions, (video.count_frames(), predictions.shape[1], predictions.shape[2]))
+        predictions = np.roll(np.resize(predictions, (video.count_frames(), predictions.shape[1], predictions.shape[2])), 3, axis=0)
         
         assert predictions.shape[0] == video.count_frames()
 
