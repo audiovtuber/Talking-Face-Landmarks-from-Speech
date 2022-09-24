@@ -21,11 +21,16 @@ pip install torch==1.12.1+cu116  -f https://download.pytorch.org/whl/torch_stabl
 
 # Preparing Data
 
+There are two options for preparing the dataset: build it yourself, or simply download a tarfile and extract it.
+
+## The Easy way
+
+Download [this tarfile](https://storage.googleapis.com/audio-vtuber/grid_features.tar) and extract it to `project_root/grid_dataset/features`. Done!
+## The Hard Way
+
 Before you can train a model, you'll need to download and process the [GRID dataset](https://spandh.dcs.shef.ac.uk//gridcorpus/). This can be done via the [`scrape_grid_dataset.py`](scrape_grid_dataset.py) and [`build_dataset.py`](build_dataset.py) scripts. 
 
 > **Note**: This can take a **long time** and should be done using a machine with many CPU cores and a fast internet connection.
-
-## Downloading the GRID Dataset
 
 Inside the project root in the container, run `python scrape_grid_dataset.py`, which will do these things:
 
