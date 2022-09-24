@@ -6,8 +6,9 @@ This repo is a fork of [Talking Face Landmarks From Speech](https://github.com/e
 3. Build the container (if you want) `docker build -t slashfury/fsdl-talking-face .`
   * Alternatively, pull the container from dockerhub via `docker pull slashfury/fsdl-talking-face`
 4. Start the container with `docker run --gpus all -it --name tf-dev -v $PWD:/workspace/Talking-Face-Landmarks-from-Speech --ipc=host slashfury/fsdl-talking-face` (this will mount the project inside the container and open a bash terminal)
-5. Inside the container, run the following git command and then log into Weights & Biases
+5. Inside the container, run the following commands and then log into Weights & Biases
 ``` bash
+mv shape_predictor_68_face_landmarks.dat Talking-Face-Landmarks-from-Speech
 cd Talking-Face-Landmarks-from-Speech
 git config --global --add safe.directory /workspace/Talking-Face-Landmarks-from-Speech
 wandb login
