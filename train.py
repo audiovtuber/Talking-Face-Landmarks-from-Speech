@@ -30,15 +30,21 @@ class TalkingFaceLSTM(pl.LightningModule):
         self.hidden_size = hidden_size
         #instantiate loss criterion
         self.criterion = nn.MSELoss()
-        self.model = nn.LSTM(input_size=128, hidden_size=self.hidden_size, proj_size=2 * self.num_landmarks, num_layers=self.layers, dropout=0.2, batch_first=True, )
+
+        self.lstm_layers = nn.LSTM(input_size=128, hidden_size=self.hidden_size, num_layers=self.layers, dropout=0.2, batch_first=True, )
+        self.output_layer = nn.Linear(self.hidden_size, 2 * self.num_landmarks)
+        # self.model = nn.LSTM(input_size=128, hidden_size=self.hidden_size, proj_size=2*self.num_landmarks, num_layers=self.layers, dropout=0.2, batch_first=True, )
         # self.train_accuracy = torchmetrics.Accuracy()
         self.save_hyperparameters()
 
     def forward(self, X, hidden=None, cell=None):
         if hidden is not None:
-            return self.model(X, (hidden, cell))
+            lstm_features, (final_hidden, final_cell) = self.lstm_layers(X, (hidden, cell))
         else:
-            return self.model(X)
+            lstm_features, (final_hidden, final_cell) = self.lstm_layers(X)
+        
+        outputs = self.output_layer(lstm_features)
+        return outputs, (final_hidden, final_cell)
 
     def configure_optimizers(self):
         return self.optimizer(self.parameters(), lr=self.lr)
@@ -78,7 +84,7 @@ if __name__ == '__main__':
     args.optimizer = args.optimizer.lower()
     assert args.landmarks == 68  # TODO: Someday, maybe support other number of landmarks
     assert args.optimizer in {'adam', 'sgd'}
-    assert args.hidden_size >= 2 * args.landmarks
+    # assert args.hidden_size >= 2 * args.landmarks
     """
     args = SimpleNamespace(
         num_landmarks=136,
