@@ -4,3 +4,6 @@ lightning_logs/
 .pytest_cache/
 wandb/
 audio-vtuber/
+results/
+predictions/
+experiments/
