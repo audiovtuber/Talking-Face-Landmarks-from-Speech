@@ -71,6 +71,7 @@ python generate.py -i test_samples/test1.flac -m my_experiment/trained_model.ckp
 
 
 # Local Setup
+A local setup is useful especially for code completion, linting, and autoformatting
 > Note: Setup was tested in an Ubuntu 20.04 image in WSL.
 
 1. Install [conda](https://docs.conda.io/en/latest/miniconda.html) like normal using linux script
@@ -90,6 +91,7 @@ conda env update -f environment.yml
 wget http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
 bzip2 -d shape_predictor_68_face_landmarks.dat.bz2
 ```
+5. If using vscode, install the extensions `autoDocstring` and `Remote Development` extensions. Configure `autoDocstring` to generate numpy-style docstrings
 
 Finally, activate the conda environment using `conda activate talking-face`. At this point, you should be able to run the [code example](#code-example) below using your own FLAC audio file
 

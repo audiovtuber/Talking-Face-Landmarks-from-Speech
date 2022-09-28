@@ -10,7 +10,7 @@ import numpy as np
 import imageio
 from tqdm import tqdm
 
-from generate import TalkingFacePredictor, extract_audio_features_from_video
+from generate import extract_audio_features_from_video, TalkingFacePredictor
 
 
 def overlay_landmarks(image, shape):
@@ -20,7 +20,7 @@ def overlay_landmarks(image, shape):
             overlayed_image[
                 part.y - 2 : part.y + 2, part.x - 2 : part.x + 2
             ] = np.array([255, 255, 255])
-    except AttributeError as e:
+    except AttributeError:
         for x, y in shape:
             # likely a numpy array has been passed in instead of a dlib full_object_detection object
             overlayed_image[y - 2 : y + 2, x - 2 : x + 2] = np.array([255, 255, 255])

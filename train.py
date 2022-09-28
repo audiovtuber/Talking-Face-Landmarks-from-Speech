@@ -2,19 +2,21 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
-# from types import SimpleNamespace
-
-import torch
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import WandbLogger
-from pytorch_lightning.callbacks import ModelCheckpoint
-from torch.optim import Adam, SGD
+import torch
 import torch.nn as nn
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import WandbLogger
+from torch.optim import Adam, SGD
 
 from dataset import GridDataModule
 
 
 class TalkingFaceLSTM(pl.LightningModule):
+    """
+    The main workhorse for training and predicting face landmarks from audio
+    """
+
     def __init__(
         self,
         num_landmarks,

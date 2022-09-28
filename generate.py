@@ -50,15 +50,6 @@ class TalkingFacePredictor:
         return self.predict(inputs)
 
 
-def addContext(melSpc, ctxWin):
-    ctx = melSpc[:, :]
-    filler = melSpc[0, :]
-    for i in range(ctxWin):
-        melSpc = np.insert(melSpc, 0, filler, axis=0)[: ctx.shape[0], :]
-        ctx = np.append(ctx, melSpc, axis=1)
-    return ctx
-
-
 def extract_audio_features(
     path: str,
     hsize: float = 0.04,

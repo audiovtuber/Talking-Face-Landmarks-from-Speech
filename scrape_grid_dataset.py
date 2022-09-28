@@ -2,21 +2,36 @@
 The purpose of this script is to download all videos of the GRID dataset and decompress them. This should only be done
 if the files are not available via git-lfs
 """
-from asyncio import subprocess
 import os
+import subprocess
 from argparse import ArgumentParser
 from pathlib import Path
-import subprocess
+from typing import Union
 
 import requests
 from tqdm import tqdm
 
 
-def fetch_file(individual: int, part: int, output_dir=None, use_gcs: bool = True):
-    """
-    Downloads one part of an individual tarball from the GRID dataset. Note that
+def fetch_file(
+    individual: int,
+    part: int,
+    output_dir: Union[Path, str] = "grid_dataset",
+    use_gcs: bool = True,
+):
+    """Downloads one part of an individual tarball from the GRID dataset. Note that
     each individual has two parts and 33 total individuals (individual 21 is missing),
     totalling 66 files
+
+    Parameters
+    ----------
+    individual : int
+        ID of the individual whose video file is being retrieved. Should be a number in between 1 and 34 (inclusive) except for 21
+    part : int
+        Specifies whether to download the file "part1" or "part2"
+    output_dir : Union[Path, str]
+        Specifies where to save the file. Defaults to "grid_dataset"
+    use_gcs : bool, optional
+        If specified, downloads files from Google Cloud Storage; otherwise, downloads from the original university's website. Defaults to True
     """
     assert individual in set(range(1, 35)) - {21}
     assert part in {1, 2}
@@ -24,7 +39,7 @@ def fetch_file(individual: int, part: int, output_dir=None, use_gcs: bool = True
     file_path = Path(output_dir) / f"s{individual}.mpg_6000.part{part}.tar"
     print(f"Fetching part {part} for individual {individual}; writing to {file_path}")
     if os.path.exists(str(file_path)):
-        print(f"File already exists, skipping")
+        print("File already exists, skipping")
         return
     os.makedirs(output_dir, exist_ok=True)
     # Note from Slash_Fury: I made a mirror of the dataset in GCP. This is publically accessible

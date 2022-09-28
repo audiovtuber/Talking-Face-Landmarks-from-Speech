@@ -84,7 +84,10 @@ faceLmarkLookup = Mouth + Nose + leftBrow + rightBrow + leftEye + rightEye + oth
 
 
 class faceNormalizer(object):
-    # Credits: http://www.learnopencv.com/face-morph-using-opencv-cpp-python/
+    """Uses OpenCV to transform a face from any angle to a front-facing...face.
+    Adapted from and ported to opencv4: http://www.learnopencv.com/face-morph-using-opencv-cpp-python/
+    """
+
     w = 600
     h = 600
 
@@ -217,8 +220,8 @@ def write_video_wpts_wsound(frames, sound, sample_rate, path, fname, xLim, yLim)
         os.remove(os.path.join(path, fname + ".mp4"))
         os.remove(os.path.join(path, fname + ".wav"))
         os.remove(os.path.join(path, fname + "_ws.mp4"))
-    except:
-        print("Exp")
+    except (IsADirectoryError, FileNotFoundError) as e:
+        print(e)
 
     if len(frames.shape) < 3:
         frames = np.reshape(frames, (frames.shape[0], frames.shape[1] / 2, 2))

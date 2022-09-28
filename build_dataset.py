@@ -2,12 +2,11 @@
 A replacement for featureExtractor.py with support for parallelized processing
 """
 import glob
+import os
+import subprocess
 from pathlib import Path
 from argparse import ArgumentParser
-from multiprocessing import Pool, cpu_count
-from copy import deepcopy
-import subprocess
-import os
+from multiprocessing import cpu_count, Pool
 
 import librosa
 import dlib
@@ -18,14 +17,25 @@ from tqdm import tqdm
 import utils
 
 
-def extract_features(path: str, overwrite: bool = False):
-    """
-    Processes a single video and saves two numpy files as output:
+def extract_features(path: str, overwrite: bool = False) -> str:
+    """Processes a single video and saves two numpy files as output:
     1. `{video_id}-frames.npy` - shape (75, 68, 2), which represents the 68 face landmarks for
     all 75 frames of a video
     2. `{video_id}-melfeatures.npy` - shape (75, 128), the spectrogram of the audio
 
     TODO: A very dirty function and I don't like the return values either
+
+    Parameters
+    ----------
+    path : str
+        The source video file from which features will be extracted
+    overwrite : bool, optional
+        Skips extracting features if not specified. Useful to disable overwrite if the function needs rerun for a subset of files. by default False
+
+    Returns
+    -------
+    str
+        either a path string or an error message. It's dumb lol
     """
     output_dir = "grid_dataset/features"  # TODO: parameterize (use star_map?)
     video_id = path.replace("/", "-")
@@ -63,7 +73,8 @@ def extract_features(path: str, overwrite: bool = False):
     for frm_cnt in range(0, vid.count_frames()):
         try:
             img = vid.get_data(frm_cnt)
-        except:
+        except IndexError as e:
+            print(e)
             return "FRAME EXCEPTION"
 
         # NOTE: second argument controls upscaling. Originally was `1`, changed to `0` for 4x speedup

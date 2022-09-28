@@ -8,6 +8,8 @@ import pandas as pd
 
 
 class GridDataset(torch.utils.data.Dataset):
+    """PyTorch Dataset representing the [GRID corpus](https://spandh.dcs.shef.ac.uk//gridcorpus/)"""
+
     def _construct_data(self, individuals: Set[int]):
         lmark_paths = sorted(glob.glob("grid_dataset/features/*-frames.npy"))
         mel_paths = sorted(glob.glob("grid_dataset/features/*-melfeatures.npy"))
@@ -55,6 +57,8 @@ class GridDataset(torch.utils.data.Dataset):
 
 
 class GridDataModule(pl.LightningDataModule):
+    """[GRID corpus](https://spandh.dcs.shef.ac.uk//gridcorpus/) data module used primarily for training and validation"""
+
     def __init__(
         self,
         training_individuals: Set[int] = None,
