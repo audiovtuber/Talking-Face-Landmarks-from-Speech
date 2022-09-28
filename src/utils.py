@@ -4,8 +4,6 @@ import math
 import copy
 
 import matplotlib as mpl
-
-mpl.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.animation as manimation
 import numpy as np
@@ -14,6 +12,7 @@ import librosa
 from tqdm import tqdm
 import soundfile as sf
 
+mpl.use("Agg")
 font = {"size": 18}
 mpl.rc("font", **font)
 
