@@ -68,10 +68,10 @@ class GridDataModule(pl.LightningDataModule):
         return torch.utils.data.DataLoader(self.val_dataset, batch_size=self.batch_size,
             num_workers=self.num_workers
             )
-    
+
     def prepare_data(self): # node-level data preparation. e.g. move files around
         pass
-      
+
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
             self.train_dataset = GridDataset(individuals=self.training_individuals, frame_delay=self.frame_delay)

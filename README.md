@@ -29,7 +29,7 @@ There are two options for preparing the dataset: build it yourself, or simply do
 Download [this tarfile](https://storage.googleapis.com/audio-vtuber/grid_features.tar) and extract it to `project_root/grid_dataset/features`. Done!
 ## The Hard Way
 
-Before you can train a model, you'll need to download and process the [GRID dataset](https://spandh.dcs.shef.ac.uk//gridcorpus/). This can be done via the [`scrape_grid_dataset.py`](scrape_grid_dataset.py) and [`build_dataset.py`](build_dataset.py) scripts. 
+Before you can train a model, you'll need to download and process the [GRID dataset](https://spandh.dcs.shef.ac.uk//gridcorpus/). This can be done via the [`scrape_grid_dataset.py`](scrape_grid_dataset.py) and [`build_dataset.py`](build_dataset.py) scripts.
 
 > **Note**: This can take a **long time** and should be done using a machine with many CPU cores and a fast internet connection.
 
@@ -50,7 +50,7 @@ After you've [downloaded the GRID dataset](#downloading-the-grid-dataset), run `
 
 You're now ready to train a model!
 
--  [ ] TODO: Host the processed `*.npy` files somewhere. 
+-  [ ] TODO: Host the processed `*.npy` files somewhere.
 
 # Training
 
@@ -114,14 +114,14 @@ An improved version of this project can be found [here](http://www2.ece.rocheste
 * Librosa --- 0.6.0
 * opencv-python --- 3.3.0.10
 * dlib --- 19.7.0
-* tqdm 
+* tqdm
 * subprocess
 
 #### It also depends on the following packages:
 * ffmpeg --- 3.4.1
 * OpenCV --- 3.3.0
 
-The code has been tested on Ubuntu 16.04 and OS X Sierra and High Sierra. 
+The code has been tested on Ubuntu 16.04 and OS X Sierra and High Sierra.
 
 ## Code Example
 
@@ -129,7 +129,7 @@ The generation code has the following arguments:
 
 * -i --- Input speech file
     * See [this](http://librosa.github.io/librosa/generated/librosa.core.load.html#librosa.core.load) link for supported audio formats.
-* -m --- Input talking face landmarks model 
+* -m --- Input talking face landmarks model
 * -d --- Delay in terms of frames, where one frame is 40 ms
 * -c --- Number of context frames
 * -o --- Output path
@@ -147,7 +147,7 @@ You can run featureExtractor.py to extract features from videos directly. The ar
 * -sp --- Path to shape_predictor_68_face_landmarks.dat. You can download this file [here](https://github.com/AKSHAYUBHAT/TensorFace/blob/master/openface/models/dlib/shape_predictor_68_face_landmarks.dat).
 * -o --- Output file name
 
-Usage: 
+Usage:
 
 ```
 python featureExtractor.py -vp path-to-video-files/ -sp path-to-shape-predictor-68-face-landmarks-dat -o output-file-name.hdf5

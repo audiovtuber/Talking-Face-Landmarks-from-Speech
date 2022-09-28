@@ -48,26 +48,26 @@ class faceNormalizer(object):
     def similarityTransform(self, inPoints, outPoints):
         s60 = math.sin(60*math.pi/180)
         c60 = math.cos(60*math.pi/180)
-      
+
         inPts = np.copy(inPoints).tolist()
         outPts = np.copy(outPoints).tolist()
-        
+
         xin = c60*(inPts[0][0] - inPts[1][0]) - s60*(inPts[0][1] - inPts[1][1]) + inPts[1][0]
         yin = s60*(inPts[0][0] - inPts[1][0]) + c60*(inPts[0][1] - inPts[1][1]) + inPts[1][1]
-        
+
         inPts.append([np.int(xin), np.int(yin)])
-        
+
         xout = c60*(outPts[0][0] - outPts[1][0]) - s60*(outPts[0][1] - outPts[1][1]) + outPts[1][0]
         yout = s60*(outPts[0][0] - outPts[1][0]) + c60*(outPts[0][1] - outPts[1][1]) + outPts[1][1]
-        
+
         outPts.append([np.int(xout), np.int(yout)])
-        
+
         tform = cv2.estimateAffinePartial2D(np.array([inPts]), np.array([outPts]))
-        
+
         return tform
 
     def tformFlmarks(self, flmark, tform):
-        transformed = np.reshape(np.array(flmark), (68, 1, 2))           
+        transformed = np.reshape(np.array(flmark), (68, 1, 2))
         transformed = cv2.transform(transformed, tform[0])
         transformed = np.float32(np.reshape(transformed, (68, 2)))
         return transformed
@@ -78,7 +78,7 @@ class faceNormalizer(object):
 
         alignedSeq = copy.deepcopy(lmarkSeq)
         firstFlmark = alignedSeq[0,:,:]
-        
+
         # The target, normalized eye positions. [(200, 200), (480, 200)]
         eyecornerDst = [ (np.float(0.3 * w ), np.float(h / 3)), (np.float(0.7 * w ), np.float(h / 3)) ]
         # outer corner of left eye, outer corner of right eye
@@ -96,9 +96,9 @@ class faceNormalizer(object):
         h = self.h
 
         alignedSeq = copy.deepcopy(lmarkSeq)
-        
+
         eyecornerDst = [ (np.float(0.3 * w ), np.float(h / 3)), (np.float(0.7 * w ), np.float(h / 3)) ]
-    
+
         for i, lmark in enumerate(alignedSeq):
             curLmark = alignedSeq[i,:,:]  # (375 samples, 68, 2)
             eyecornerSrc  = [ (curLmark[36, 0], curLmark[36, 1]), (curLmark[45, 0], curLmark[45, 1]) ]
@@ -158,7 +158,7 @@ def write_video_wpts_wsound(frames, sound, sample_rate, path, fname, xLim, yLim)
 
     # librosa.output.write_wav(os.path.join(path, fname+'.wav'), sound, sample_rate)
     sf.write(os.path.join(path, fname+'.wav'), sound, sample_rate, 'PCM_24')
-    
+
     if frames.shape[1] == 20:
         lookup = [[x[0] - 48, x[1] - 48] for x in Mouth]
         print (lookup)
@@ -178,7 +178,7 @@ def write_video_wpts_wsound(frames, sound, sample_rate, path, fname, xLim, yLim)
             writer.grab_frame()
 
     cmd = 'ffmpeg -y -i '+os.path.join(path, fname)+'.mp4 -i '+os.path.join(path, fname)+'.wav -c:v copy -c:a aac -strict experimental '+os.path.join(path, fname)+'_ws.mp4'
-    subprocess.call(cmd, shell=True) 
+    subprocess.call(cmd, shell=True)
     print('Muxing Done')
 
     os.remove(os.path.join(path, fname+'.mp4'))
@@ -203,12 +203,12 @@ def plot_flmarks(pts, lab, xLim, yLim, xLab, yLab, figsize=(10, 10)):
 
     plt.xlabel(xLab, fontsize = font['size'] + 4, fontweight='bold')
     plt.gca().xaxis.tick_top()
-    plt.gca().xaxis.set_label_position('top') 
+    plt.gca().xaxis.set_label_position('top')
     plt.ylabel(yLab, fontsize = font['size'] + 4, fontweight='bold')
     plt.xlim(xLim)
     plt.ylim(yLim)
     plt.gca().invert_yaxis()
-   
+
     plt.savefig(lab, dpi = 300, bbox_inches='tight')
     plt.clf()
     plt.close()
@@ -220,8 +220,8 @@ def melSpectra(y, sr, wsize, hsize):
                                   hop_length = int(sr*hsize),  # 1764
                                   n_fft=int(sr*wsize)))/cnst  # with division by cnst, np.max(y_stft_abs) == 0.1368
 
-    
-    melspec = np.log(1e-16+librosa.feature.melspectrogram(sr=sr, 
+
+    melspec = np.log(1e-16+librosa.feature.melspectrogram(sr=sr,
                                              S=y_stft_abs**2,  # since all numbers are pretty small, this makes them even smaller
                                              n_mels=64))
     return melspec

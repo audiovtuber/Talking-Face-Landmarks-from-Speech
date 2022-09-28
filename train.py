@@ -15,7 +15,7 @@ from dataset import GridDataModule
 
 class TalkingFaceLSTM(pl.LightningModule):
     def __init__(self, num_landmarks,
-                optimizer='adam', 
+                optimizer='adam',
                 lr=1e-3,
                 layers=4,
                 hidden_size=256,
@@ -42,7 +42,7 @@ class TalkingFaceLSTM(pl.LightningModule):
 
     def configure_optimizers(self):
         return self.optimizer(self.parameters(), lr=self.lr)
-    
+
     def training_step(self, batch, batch_idx):
         x, y = batch
         preds = self(x)[0]  # drops the hidden state because it's not needed during batch operations, only during single-frame inference
@@ -50,7 +50,7 @@ class TalkingFaceLSTM(pl.LightningModule):
         # perform logging
         self.log("train_loss", loss, prog_bar=True)
         return loss
-    
+
     def validation_step(self, batch, batch_idx):
         x, y = batch
         preds = self(x)[0]  # drops the hidden state because it's not needed during batch operations, only during single-frame inference
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     os.environ['WANDB_DISABLE_CODE']='True'
     # # Instantiate Model
     model = TalkingFaceLSTM(num_landmarks = args.landmarks,
-                            optimizer = args.optimizer, 
+                            optimizer = args.optimizer,
                             lr = args.learning_rate,
                             layers=args.layers,
                             hidden_size=args.hidden_size,

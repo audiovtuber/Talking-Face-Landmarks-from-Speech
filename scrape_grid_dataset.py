@@ -1,5 +1,5 @@
 """
-The purpose of this script is to download all videos of the GRID dataset and decompress them. This should only be done 
+The purpose of this script is to download all videos of the GRID dataset and decompress them. This should only be done
 if the files are not available via git-lfs
 """
 from asyncio import subprocess
@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 def fetch_file(individual:int, part:int, output_dir=None, use_gcs:bool = True):
     """
-    Downloads one part of an individual tarball from the GRID dataset. Note that 
-    each individual has two parts and 33 total individuals (individual 21 is missing), 
+    Downloads one part of an individual tarball from the GRID dataset. Note that
+    each individual has two parts and 33 total individuals (individual 21 is missing),
     totalling 66 files
     """
     assert individual in set(range(1,35)) - {21}
@@ -32,8 +32,8 @@ def fetch_file(individual:int, part:int, output_dir=None, use_gcs:bool = True):
         # fallback URL; slower, but still fastish!
         url = f"https://spandh.dcs.shef.ac.uk/gridcorpus/s{individual}/video/s{individual}.mpg_6000.part{part}.tar"
     response = requests.get(url, stream=True)
-    
-    # progress bar code borrowed from Stack Overflow :) 
+
+    # progress bar code borrowed from Stack Overflow :)
     total_size_in_bytes= int(response.headers.get('content-length', 0))
     block_size = 1024 #1 Kibibyte
     progress_bar = tqdm(total=total_size_in_bytes, unit='iB', unit_scale=True)
@@ -64,7 +64,7 @@ def decompress(input_dir:str, output_dir:str):
     cmd = f"ls {input_dir}" + '/*.tar | xargs -i tar xf {} ' + f"-C {output_dir}/"
     print(f"Extracting videos using this command: {cmd}")
     subprocess.call(cmd, shell=True)
-    
+
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--use-gcs', default=True, type=bool, help='Download from Google Storage')

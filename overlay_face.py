@@ -22,7 +22,7 @@ def overlay_landmarks(image, shape):
         # likely a numpy array has been passed in instead of a dlib full_object_detection object
             overlayed_image[y-2:y+2, x-2:x+2] = np.array([255, 255, 255])
         # overlayed_image[shape] = np.array([0, 0, 255])
-    
+
     return overlayed_image
 
 
@@ -46,20 +46,20 @@ def process_video(video_path:str, output_dir:str, model:TalkingFacePredictor=Non
         model = TalkingFacePredictor(model)
         model.reset_state()
         predictions = model(features)
-        
+
         # normalize shape based on image width and height and offset X to be on the right-half of video
         predictions[:,:,0] =  predictions[:,:,0] * video_shape[0] + video_shape[0]
         predictions[:,:,1] =  predictions[:,:,1] * video_shape[1]
         predictions = predictions.astype('int')
-        
+
         # TODO: why do I need to pad frames into the audio? refactor this hack
         predictions = np.roll(np.resize(predictions, (video.count_frames(), predictions.shape[1], predictions.shape[2])), 3, axis=0)
-        
+
         assert predictions.shape[0] == video.count_frames()
 
     temp_video_path = Path(output_dir) / 'silent_my_video.mp4'
     target_video_path = Path(output_dir) / 'my_video.mp4'
-    
+
     w = iiov2.get_writer(temp_video_path, format='FFMPEG', fps=25)
     for frame_idx in tqdm(range(video.count_frames())):
         try:
@@ -74,7 +74,7 @@ def process_video(video_path:str, output_dir:str, model:TalkingFacePredictor=Non
             if model is not None:
                 overlayed_image = np.append(overlayed_image, np.zeros_like(image), axis=1)
                 overlayed_image = overlay_landmarks(overlayed_image, predictions[frame_idx])
-                
+
             w.append_data(overlayed_image)
 
             if save_images:

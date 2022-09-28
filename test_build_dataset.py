@@ -1,5 +1,5 @@
 """
-Most of these tests were written not to test functionality, but speed. To take advantage of them, 
+Most of these tests were written not to test functionality, but speed. To take advantage of them,
 use `pytest --durations=5` from the project root
 """
 import glob

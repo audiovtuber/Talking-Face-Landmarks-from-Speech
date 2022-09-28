@@ -69,7 +69,7 @@ def extract_features(path:str, overwrite:bool=False):
         shape = predictor(img, dets[0])
         point_seq[frm_cnt] = np.array([[part.x, part.y] for part in shape.parts()])
     cmd = 'ffmpeg -hide_banner -loglevel error -y -i ' + path + ' -vn -acodec pcm_s16le -ac 1 -ar 44100 ' + f"{video_id}.wav"
-    subprocess.call(cmd, shell=True) 
+    subprocess.call(cmd, shell=True)
 
     try:
         y, sr = librosa.load(f"{video_id}.wav", sr=44100)
@@ -95,7 +95,7 @@ def extract_features(path:str, overwrite:bool=False):
 
     if melFeatures.shape[0] != 75:
         return path
-        
+
     # TODO: change hardcoded output dir
     with open(f"{output_dir}/{video_id}-melfeatures.npy", 'wb') as f:
         np.save(f, melFeatures)
@@ -134,7 +134,7 @@ if __name__ == '__main__':
         print("Only using one process. This takes forever and is only useful for debugging")
         for path in tqdm(video_paths):
             extract_features(path)
-    
+
 
 """
 errors:

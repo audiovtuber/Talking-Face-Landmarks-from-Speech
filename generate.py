@@ -18,7 +18,7 @@ from train import TalkingFaceLSTM
 
 class TalkingFacePredictor:
     """
-    A trained audio vtuber model for inference. It behaves similarly to a regular torch module, but helps manage the LSTM's 
+    A trained audio vtuber model for inference. It behaves similarly to a regular torch module, but helps manage the LSTM's
     statefulness between predictions. Intended usage is as follows for each sequence of predictions:
     1. Call predictor.reset_state() (resets hidden state from previous sequences)
     2. Call predictor() or predictor.predict() for each frame in a sequence
@@ -94,11 +94,5 @@ if __name__ == '__main__':
     model.reset_state()  # not necessary here, but good practice
     out = model(features)
     fnorm = utils.faceNormalizer()
-    out = fnorm.alignEyePointsV2(600*out) / 600.0 
+    out = fnorm.alignEyePointsV2(600*out) / 600.0
     utils.write_video_wpts_wsound(out, sound, 44100, args.out_fold, 'PD_pts', [0, 1], [0, 1])
-
-
-
-    
-
-

@@ -1,0 +1,13 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+        args: ['--maxkb=10240']      #  where large means 10MB+, as in Hugging Face's git server
+    - id: debug-statements         # check for python debug statements (import pdb, breakpoint, etc.)
+    - id: detect-private-key       # checks for private keys (BEGIN X PRIVATE KEY, etc.)
