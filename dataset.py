@@ -8,22 +8,29 @@ import pandas as pd
 
 
 class GridDataset(torch.utils.data.Dataset):
-    def _construct_data(self, individuals:Set[int]):
-        lmark_paths = sorted(glob.glob('grid_dataset/features/*-frames.npy'))
-        mel_paths = sorted(glob.glob('grid_dataset/features/*-melfeatures.npy'))
-        data = {'melfeatures': mel_paths, 'frames': lmark_paths}
+    def _construct_data(self, individuals: Set[int]):
+        lmark_paths = sorted(glob.glob("grid_dataset/features/*-frames.npy"))
+        mel_paths = sorted(glob.glob("grid_dataset/features/*-melfeatures.npy"))
+        data = {"melfeatures": mel_paths, "frames": lmark_paths}
         df = pd.DataFrame(data)
 
-        df['video_id'] = df['frames'].str.extract(r'([a-zA-Z0-9]+)\.mpg')
-        mel_id = df['melfeatures'].str.extract(r'([a-zA-Z0-9]+)\.mpg')  # just used for validation of video_id
-        assert len(df) == sum(mel_id[0] == df['video_id'])
+        df["video_id"] = df["frames"].str.extract(r"([a-zA-Z0-9]+)\.mpg")
+        # mel_id is just used for validation of video_id
+        mel_id = df["melfeatures"].str.extract(r"([a-zA-Z0-9]+)\.mpg")
+        assert len(df) == sum(mel_id[0] == df["video_id"])
 
-        df['individual'] = df['frames'].str.extract(r'-s([0-9]{1,2})-').astype(int)
-        df = df[df['individual'].isin(individuals)]
+        df["individual"] = df["frames"].str.extract(r"-s([0-9]{1,2})-").astype(int)
+        df = df[df["individual"].isin(individuals)]
 
         return df
 
-    def __init__(self, individuals:Set[int], transform=None, target_transform=None, frame_delay:int=0):
+    def __init__(
+        self,
+        individuals: Set[int],
+        transform=None,
+        target_transform=None,
+        frame_delay: int = 0,
+    ):
         super().__init__()
         self.df = self._construct_data(individuals)
         self.transform = transform
@@ -34,8 +41,10 @@ class GridDataset(torch.utils.data.Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-        mel = torch.tensor(np.load(open(self.df.iloc[idx]['melfeatures'], 'rb'))).float()
-        frames = np.load(open(self.df.iloc[idx]['frames'], 'rb'))
+        mel = torch.tensor(
+            np.load(open(self.df.iloc[idx]["melfeatures"], "rb"))
+        ).float()
+        frames = np.load(open(self.df.iloc[idx]["frames"], "rb"))
 
         # TODO: Consider not rolling from ends and just copy/ignore those edge cases
         if self.frame_delay != 0:
@@ -46,7 +55,13 @@ class GridDataset(torch.utils.data.Dataset):
 
 
 class GridDataModule(pl.LightningDataModule):
-    def __init__(self, training_individuals:Set[int]=None, num_workers:int = 11, batch_size=32, frame_delay:int=0):
+    def __init__(
+        self,
+        training_individuals: Set[int] = None,
+        num_workers: int = 11,
+        batch_size=32,
+        frame_delay: int = 0,
+    ):
         super().__init__()
         allowed_individuals = set(range(1, 35)) - {21}
         if training_individuals is None:
@@ -60,24 +75,28 @@ class GridDataModule(pl.LightningDataModule):
         self.frame_delay = frame_delay
 
     def train_dataloader(self: pl.LightningDataModule) -> torch.utils.data.DataLoader:
-        return torch.utils.data.DataLoader(self.train_dataset, batch_size=self.batch_size,
-            num_workers=self.num_workers
-            )
+        return torch.utils.data.DataLoader(
+            self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def val_dataloader(self: pl.LightningDataModule) -> torch.utils.data.DataLoader:
-        return torch.utils.data.DataLoader(self.val_dataset, batch_size=self.batch_size,
-            num_workers=self.num_workers
-            )
+        return torch.utils.data.DataLoader(
+            self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
-    def prepare_data(self): # node-level data preparation. e.g. move files around
+    def prepare_data(self):  # node-level data preparation. e.g. move files around
         pass
 
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
-            self.train_dataset = GridDataset(individuals=self.training_individuals, frame_delay=self.frame_delay)
-            self.val_dataset = GridDataset(individuals=self.val_individuals, frame_delay=self.frame_delay)
+            self.train_dataset = GridDataset(
+                individuals=self.training_individuals, frame_delay=self.frame_delay
+            )
+            self.val_dataset = GridDataset(
+                individuals=self.val_individuals, frame_delay=self.frame_delay
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     data_module = GridDataModule(frame_delay=-2)
     data_module.setup("fit")
