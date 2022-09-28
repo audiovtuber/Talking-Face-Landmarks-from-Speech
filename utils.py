@@ -214,14 +214,15 @@ def plot_flmarks(pts, lab, xLim, yLim, xLab, yLab, figsize=(10, 10)):
     plt.close()
 
 def melSpectra(y, sr, wsize, hsize):
-    cnst = 1+(int(sr*wsize)/2)
+    cnst = 1+(int(sr*wsize)/2)  # 883.0
     y_stft_abs = np.abs(librosa.stft(y,
-                                  win_length = int(sr*wsize),
-                                  hop_length = int(sr*hsize),
-                                  n_fft=int(sr*wsize)))/cnst
+                                  win_length = int(sr*wsize),  # 1764
+                                  hop_length = int(sr*hsize),  # 1764
+                                  n_fft=int(sr*wsize)))/cnst  # with division by cnst, np.max(y_stft_abs) == 0.1368
 
+    
     melspec = np.log(1e-16+librosa.feature.melspectrogram(sr=sr, 
-                                             S=y_stft_abs**2,
+                                             S=y_stft_abs**2,  # since all numbers are pretty small, this makes them even smaller
                                              n_mels=64))
     return melspec
 

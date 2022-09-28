@@ -88,9 +88,9 @@ def extract_features(path:str, overwrite:bool=False):
     if frames.shape[0] != 75:
         return path
 
-    melFrames = np.transpose(utils.melSpectra(y, sr, wsize, hsize))
-    melDelta = np.insert(np.diff(melFrames, n=1, axis=0), 0, zeroVecD, axis=0)
-    melDDelta = np.insert(np.diff(melFrames, n=2, axis=0), 0, zeroVecDD, axis=0)
+    melFrames = np.transpose(utils.melSpectra(y, sr, wsize, hsize))  # shape after transpose is roughly (audio_length_in_ms / 40, 64)
+    melDelta = np.insert(np.diff(melFrames, n=1, axis=0), 0, zeroVecD, axis=0)  # inserts zeros into the first row of the diff of melFrames (the diff operation wraps and we don't want that)
+    melDDelta = np.insert(np.diff(melFrames, n=2, axis=0), 0, zeroVecDD, axis=0)  # same idea as last line. n=2 is equal to np.diff(np.diff(x, n=1), n=1), so the first two rows should be zeroes
     melFeatures = np.concatenate((melDelta, melDDelta), axis=1)
 
     if melFeatures.shape[0] != 75:
