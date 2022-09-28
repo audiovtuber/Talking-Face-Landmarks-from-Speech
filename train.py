@@ -117,4 +117,4 @@ if __name__ == '__main__':
     # Save trained model
     save_path = Path(args.save_path) / 'trained_model.ckpt'
     trainer.save_checkpoint(save_path)
-    trainer.to_onnx(Path(args.save_path) / 'trained_model.onnx', torch.randn(1, 2 * args.num_landmarks), export_params=True)
+    trainer.to_onnx(Path(args.save_path) / 'trained_model.onnx', torch.randn(1, 128), export_params=True)
