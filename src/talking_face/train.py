@@ -1,3 +1,4 @@
+import glob
 import os
 from argparse import ArgumentParser
 from pathlib import Path
@@ -7,7 +8,9 @@ import torch
 import torch.nn as nn
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.profiler import PyTorchProfiler
 from torch.optim import Adam, SGD
+import wandb
 
 from talking_face.dataset import GridDataModule
 
@@ -135,6 +138,12 @@ def parse_args():
         default=0,
         help="Offsets the landmarks by this many frames (1 = 40ms, 2 = 80ms, etc)",
     )
+    parser.add_argument(
+        "--profile",
+        required=False,
+        action="store_true",
+        help="Runs the PyTorch Profiler",
+    )
     return parser.parse_args()
 
 
@@ -169,11 +178,19 @@ if __name__ == "__main__":
         hidden_size=args.hidden_size,
     )
     # Instantiate lightning trainer and train model
-    trainer_args = {"gpus": int(torch.cuda.is_available()), "max_epochs": args.epochs}
     wandb_logger = WandbLogger(project="audio-vtuber", job_type="train", log_model=True)
     wandb_logger.watch(model, log_freq=max(100, args.log_every_n_steps))
     wandb_logger.log_hyperparams(vars(args))
     checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min")
+    trainer_args = {
+        "gpus": int(torch.cuda.is_available()),
+        "max_epochs": args.epochs,
+    }
+    if args.profile:
+        profiler = PyTorchProfiler(
+            export_to_chrome=True, dirpath=wandb_logger.experiment.dir
+        )
+        trainer_args["profiler"] = profiler
     trainer = pl.Trainer(
         logger=wandb_logger,
         callbacks=[checkpoint_callback],
@@ -189,4 +206,17 @@ if __name__ == "__main__":
     )
     # Save trained model
     save_path = Path(args.save_path) / "trained_model.ckpt"
+
+    if args.profile:
+        try:  # add execution trace to logged and versioned binaries
+            trace_matcher = wandb_logger.experiment.dir + "/*.pt.trace.json"
+            trace_files = glob.glob(trace_matcher)
+            trace_at = wandb.Artifact(
+                name=f"trace-{wandb_logger.experiment.id}", type="trace"
+            )
+            for trace_file in trace_files:
+                trace_at.add_file(trace_file, name=Path(trace_file).name)
+            wandb.log_artifact(trace_at)
+        except IndexError:
+            print("trace not found")
     trainer.save_checkpoint(save_path)
