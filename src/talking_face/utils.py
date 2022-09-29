@@ -215,12 +215,14 @@ class faceNormalizer(object):
 
 
 def write_video_wpts_wsound(frames, sound, sample_rate, path, fname, xLim, yLim):
+    os.makedirs(path, exist_ok=True)
     try:
         os.remove(os.path.join(path, fname + ".mp4"))
         os.remove(os.path.join(path, fname + ".wav"))
         os.remove(os.path.join(path, fname + "_ws.mp4"))
-    except (IsADirectoryError, FileNotFoundError) as e:
-        print(e)
+    except (IsADirectoryError, FileNotFoundError):
+        # It's ok if the files didn't already exist
+        pass
 
     if len(frames.shape) < 3:
         frames = np.reshape(frames, (frames.shape[0], frames.shape[1] / 2, 2))

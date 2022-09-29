@@ -1,6 +1,6 @@
 import torch
 
-from dataset import GridDataModule
+from talking_face.dataset import GridDataModule
 
 
 def test_grid_samples_are_different():

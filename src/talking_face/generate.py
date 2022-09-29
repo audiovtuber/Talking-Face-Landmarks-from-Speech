@@ -12,8 +12,8 @@ import matplotlib as mpl
 
 mpl.use("Agg")
 
-import utils
-from train import TalkingFaceLSTM
+from talking_face import utils
+from talking_face.train import TalkingFaceLSTM
 
 
 class TalkingFacePredictor:

@@ -9,7 +9,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from torch.optim import Adam, SGD
 
-from dataset import GridDataModule
+from talking_face.dataset import GridDataModule
 
 
 class TalkingFaceLSTM(pl.LightningModule):

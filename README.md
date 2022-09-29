@@ -4,15 +4,13 @@ This repo is a fork of [Talking Face Landmarks From Speech](https://github.com/e
 1. Clone this repo
 2. `cd` to the project root
 3. Build the container (if you want) `docker build -t slashfury/fsdl-talking-face .`
-  * Alternatively, pull the container from dockerhub via `docker pull slashfury/fsdl-talking-face`
+> *Alternatively, pull the container from dockerhub via `docker pull slashfury/fsdl-talking-face`*
 4. Start the container with `docker run --gpus all -it --name tf-dev -v $PWD:/workspace/Talking-Face-Landmarks-from-Speech --ipc=host slashfury/fsdl-talking-face` (this will mount the project inside the container and open a bash terminal)
-5. Inside the container, run the following commands and then log into Weights & Biases
+5. Inside the container, run the following command
 ``` bash
 mv shape_predictor_68_face_landmarks.dat Talking-Face-Landmarks-from-Speech
-cd Talking-Face-Landmarks-from-Speech
-git config --global --add safe.directory /workspace/Talking-Face-Landmarks-from-Speech
-wandb login
 ```
+> *You only need to do step 5 once ever; by moving the file, it's now in your project root and will be mounted every time you start the container*
 
 ## A100 Instructions
 If running on a machine with an A100 GPU, you need to use a specific version of pytorch. Run this command:
@@ -26,7 +24,7 @@ There are two options for preparing the dataset: build it yourself, or simply do
 
 ## The Easy way
 
-Download [this tarfile](https://storage.googleapis.com/audio-vtuber/grid_features.tar) and extract it to `project_root/grid_dataset/features`. Done!
+Download [this tarfile](https://storage.googleapis.com/audio-vtuber/grid_features.tar) and extract it to `project_root/grid_dataset/features`. Done! You're now ready for [Training](#training)
 ## The Hard Way
 
 Before you can train a model, you'll need to download and process the [GRID dataset](https://spandh.dcs.shef.ac.uk//gridcorpus/). This can be done via the [`scrape_grid_dataset.py`](src/scrape_grid_dataset.py) and [`build_dataset.py`](src/build_dataset.py) scripts.
@@ -40,7 +38,7 @@ Inside the project root in the container, run `python src/scrape_grid_dataset.py
 
 By default, the script has the flag `--use-gcs`, which downloads from a faster mirror
 
-## Building the Training Dataset
+### Building the Training Dataset
 
 After you've [downloaded the GRID dataset](#downloading-the-grid-dataset), run `python src/build_dataset.py`, which will do these things:
 
@@ -50,23 +48,32 @@ After you've [downloaded the GRID dataset](#downloading-the-grid-dataset), run `
 
 You're now ready to train a model!
 
--  [ ] TODO: Host the processed `*.npy` files somewhere.
-
 # Training
 
-Inside the project root in the container, run [`train.py`](src/train.py) after you've [prepared the dataset](#preparing-data). The only required argument is `--save-path`, but feel free to experiment with other flags!
+Inside the project root in the container, run [`train.py`](src/talking_face/train.py) after you've [prepared the dataset](#preparing-data). The only required argument is `--save-path`, but feel free to experiment with other flags!
+
+> The first time you run training after starting a new docker container, Weights & Biases will prompt you to login. Follow the instructions in terminal
 
 ``` bash
 # Example Training Run
-python src/train.py --layers 4 --save-path experiments/my_experiment --epochs 100 --batch-size 256
+python -m talking_face.train --layers 4 --save-path experiments/my_experiment --epochs 100 --batch-size 256
 ```
 
 # Predicting
 
-Inside the project root in the container, run [`generate.py`](src/generate.py) after you've [trained a model](#training)
+Inside the project root in the container, there are two scripts for prediction: [`overlay_face.py`](src/talking_face/overlay_face.py) and [`generate.py`](src/talkiing_face/generate.py) after you've [trained a model](#training). The difference is that `generate.py` will generate a video using only a matplotlib plot, whereas `overlay_face.py` will output the original video plus ground truth face landmarks (left) side-by-side with the audio-only predictions from the model (right). I recommend using [`overlay_face.py`](src/talking_face/overlay_face.py)
+
+## `overlay_face` example
 
 ``` bash
-python src/generate.py -i test_samples/test1.flac -m my_experiment/trained_model.ckpt -d 0 -c 0 -o output_dir
+python -m talking_face.overlay_face --input-video test_samples/my_video.mp4 --model experiments/my_experiment/trained_model.ckpt --output-dir results/my_video
+```
+
+## `generate` example
+> *I recommend using [overlay_face](#overlayface-example) instead*
+
+``` bash
+python -m talking_face.generate -i test_samples/test1.flac -m experiments/my_experiment/trained_model.ckpt -d 0 -c 0 -o output_dir
 ```
 
 

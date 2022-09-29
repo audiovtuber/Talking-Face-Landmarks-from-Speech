@@ -1,3 +1,4 @@
+pip>=21.3.0
 librosa==0.9.2
 dlib
 tqdm

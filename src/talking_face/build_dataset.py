@@ -14,7 +14,7 @@ import numpy as np
 import imageio
 from tqdm import tqdm
 
-import utils
+from talking_face import utils
 
 
 def extract_features(path: str, overwrite: bool = False) -> str:
