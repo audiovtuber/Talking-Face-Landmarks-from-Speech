@@ -10,7 +10,10 @@ import numpy as np
 import imageio
 from tqdm import tqdm
 
-from talking_face.generate import extract_audio_features_from_video, TalkingFacePredictor
+from talking_face.generate import (
+    extract_audio_features_from_video,
+    TalkingFacePredictor,
+)
 
 
 def overlay_landmarks(image, shape):
