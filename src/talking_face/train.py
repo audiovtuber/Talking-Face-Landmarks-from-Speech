@@ -2,6 +2,7 @@ import glob
 import os
 from argparse import ArgumentParser
 from pathlib import Path
+from typing import Optional, Tuple, Sequence, Union
 
 import pytorch_lightning as pl
 import torch
@@ -49,11 +50,19 @@ class TalkingFaceLSTM(pl.LightningModule):
         # self.train_accuracy = torchmetrics.Accuracy()
         self.save_hyperparameters()
 
+    @torch.jit.ignore
     def forward(self, X, hidden=None, cell=None):
         if hidden is not None:
             return self.model(X, (hidden, cell))
         else:
             return self.model(X)
+
+    @torch.jit.export
+    def predict(
+        self, batch, hiddens: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
+    ):
+        out, hiddens = self.model(batch, hiddens)
+        return out.reshape((-1, 68, 2)), hiddens
 
     def configure_optimizers(self):
         return self.optimizer(self.parameters(), lr=self.lr)
@@ -116,11 +125,6 @@ def parse_args():
         help="Number of units per LSTM layer. Must be >= 2 * landmarks",
     )
     parser.add_argument(
-        "--save-path",
-        required=True,
-        help="Where to save the final model",
-    )
-    parser.add_argument(
         "--epochs",
         type=int,
         default=50,
@@ -147,6 +151,34 @@ def parse_args():
     return parser.parse_args()
 
 
+def export_to_torchscript(model: Union[TalkingFaceLSTM, str], output_dir: str = None):
+    model = (
+        TalkingFaceLSTM.load_from_checkpoint(model) if isinstance(model, str) else model
+    )
+    torchscript_model = model.to_torchscript()
+
+    if output_dir is not None:
+        os.makedirs(output_dir, exist_ok=True)
+        target_filepath = Path(output_dir) / "torchscript_model.pt"
+        torch.jit.save(torchscript_model, target_filepath)
+        print(f"Saved as {target_filepath}")
+
+    return torchscript_model
+
+
+# NOTE: TalkingFaceLSTM does not support ONNX at this time due to use of projections
+def export_to_onnx(model: str, input_dims: Sequence[int], output_dir):
+    """
+    model = TalkingFaceLSTM.load_from_checkpoint(model)
+    os.makedirs(output_dir, exist_ok=True)
+    target_filepath = Path(output_dir) / "model.onnx"
+    model.to_onnx(target_filepath, input_sample=torch.randn(input_dims), export_params=True)
+    """
+    raise NotImplementedError(
+        "TalkingFaceLSTM does not support ONNX at this time due to use of projections"
+    )
+
+
 if __name__ == "__main__":
     args = parse_args()
     args.optimizer = args.optimizer.lower()
@@ -161,7 +193,6 @@ if __name__ == "__main__":
         optimizer='adam',
         learning_rate=1e-3,
         batch_size=128,
-        save_path='./pytorch_output/',
         # Trainer args
         gpus=int(torch.cuda.is_available()),
         epochs=50,
@@ -204,8 +235,6 @@ if __name__ == "__main__":
         model,
         datamodule=data_module,
     )
-    # Save trained model
-    save_path = Path(args.save_path) / "trained_model.ckpt"
 
     if args.profile:
         try:  # add execution trace to logged and versioned binaries
@@ -219,4 +248,22 @@ if __name__ == "__main__":
             wandb.log_artifact(trace_at)
         except IndexError:
             print("trace not found")
-    trainer.save_checkpoint(save_path)
+    """
+    NOTE: Three hacky things here:
+    1. wandb seems to monkeypatch the model, so if we try to directly export it to torchscript, it may fail.
+        As a workaround, we simply reload the model before exporting (and subsequently uploading)
+    2. We hijack the checkpoint_callback to save the exported the torchscript model to the same directory
+        TODO: Write a custom ModelCheckpoint() that does this for us instead
+    3. Really, the staged model should be tagged and compared to see if it's better than whatever exists already (so it can be considered latest and auto-pulled by deployed services)
+    """
+    model = TalkingFaceLSTM.load_from_checkpoint(checkpoint_callback.best_model_path)
+    torchscript_model = export_to_torchscript(
+        model, output_dir=checkpoint_callback.dirpath
+    )
+    staged_model_artifact = wandb.Artifact(
+        f"torchscript_model-{wandb_logger.experiment.id}", type="prod-ready"
+    )
+    staged_model_artifact.add_file(
+        Path(checkpoint_callback.dirpath) / "torchscript_model.pt"
+    )
+    wandb.log_artifact(staged_model_artifact)
